@@ -1,0 +1,6 @@
+python-telegram-bot[job-queue]==21.4
+telethon==1.36.0
+pendulum==3.0.0
+XlsxWriter==3.2.0
+Django==5.1
+djangorestframework==3.15.2

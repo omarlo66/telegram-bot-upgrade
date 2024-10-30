@@ -1,0 +1,22 @@
+class BotStep:
+    IDLE = 0
+
+    # subscribe
+    SELECT_SUBSCRIPTION_GROUP = 1
+    SUBSCRIPTION_PAYMENT_METHOD = 2
+    SUBSCRIPTION_INVOICE_NUMBER = 3
+    TRADINGVIEW_ID = 4
+
+    # renew
+    RENEW_SUBSCRIPTION = 10
+    RENEW_END_DATE = 11
+    RENEW_PAYMENT_METHOD = 12
+    RENEW_INVOICE_NUMBER = 13
+    RENEW_TRADINGVIEW_ID = 14
+
+    # /start
+    START = 20
+
+    # contact support
+    CONTACT_SUPPORT = 30
+    RESPOND_TO_SUPPORT = 31
