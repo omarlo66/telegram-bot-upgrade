@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime,time
 
 from django.db.models import Q
 from django.utils import timezone
@@ -6,10 +6,52 @@ from django.views.generic import TemplateView
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from rest_framework import response
 from OciechartBotDjango.serializers import SubscriptionSerializer
+from src.common import settings
 from src.common.models import Subscription
+from src.common.utils import get_credentials
 
+from .forms import LoginForm
+from django.shortcuts import render
+from django.http import HttpResponseRedirect
+
+
+class loginAdmin(TemplateView):
+    template_name = "login.html"    
+
+class save_cred(APIView):
+    auth_token = get_credentials('token_auth')
+    def post(self,request):
+        user_auth_ = False
+        if request.POST:
+            response = Response()
+            password = request.POST['password']
+            if password == self.auth_token:
+                user_auth_ = True
+                set_cookie(response,'auth',password,7)
+        response.data = user_auth_
+        response.status_code = 200
+        return response
+        
+def set_cookie(response, key, value, days_expire=7):
+    if days_expire is None:
+        max_age = 365 * 24 * 60 * 60  # one year
+    else:
+        max_age = days_expire * 24 * 60 * 60
+    expires = datetime.strftime(
+        datetime.utcnow() + timedelta(seconds=max_age),
+        "%a, %d-%b-%Y %H:%M:%S GMT"
+    )
+    response.set_cookie(
+        key,
+        value,
+        max_age=max_age,
+        expires=expires,
+        domain='/',
+        secure=False,
+        httponly=True
+    )
 
 class SubscriberActivityView(TemplateView):
     template_name = "subscriber-activity.html"
@@ -17,6 +59,11 @@ class SubscriberActivityView(TemplateView):
 
 class SubscriberActivityAPIView(APIView):
     def get(self, request, format=None):
+        token = request.COOKIES.get('auth')
+        print(token)
+        if token != get_credentials('token_auth'):
+            return Response(False,status=status.HTTP_401_UNAUTHORIZED)
+
         filter_param = request.query_params.get('filter', 'month')
         now = timezone.now()
         one_month_ago = now - timedelta(days=30)

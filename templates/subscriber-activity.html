@@ -177,6 +177,9 @@
                             url: `/api/subscriber-activity/?filter=${filter}`,
                             method: 'GET',
                             success: function (data) {
+                                if(data == 'false' || ! data){
+                                    location.href = '/'
+                                }
                                 const chartData = data.chart_data
                                 total_members.value = data.total_members
                                 joined_within_a_month_percentage.value = data.joined_within_a_month_percentage
@@ -191,6 +194,9 @@
                                 myChart.data.datasets[0].data = joiningData;
                                 myChart.data.datasets[1].data = leavingData;
                                 myChart.update();
+                            },
+                            error: function (error) {
+                                location.href = "/";
                             }
                         });
                     }

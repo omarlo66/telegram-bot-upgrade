@@ -175,6 +175,17 @@ async def aget_inline_keyboard(
     return keyboard
 
 
+
+
+
+
+
+def get_path(path: str) -> Path:
+    if not settings.PROJECT_ROOT:
+        raise ValueError('"PROJECT_ROOT" is required in settings.')
+
+    return Path(settings.PROJECT_ROOT, path)
+
 def get_credentials(bot_type: str):
     filename = get_path('credentials.json')
 
@@ -184,13 +195,14 @@ def get_credentials(bot_type: str):
 
     raise FileNotFoundError('Credentials file not found.')
 
-
-def get_path(path: str) -> Path:
-    if not settings.PROJECT_ROOT:
-        raise ValueError('"PROJECT_ROOT" is required in settings.')
-
-    return Path(settings.PROJECT_ROOT, path)
-
+def set_credintials(name:str,value):
+    filename = get_path('credentials.json')
+    if os.path.isfile(filename):
+        with open(filename) as f:
+            data = json.load(f)
+            data[name] = value
+            with open(filename,'w') as s:
+                json.dump(data,s)
 
 def get_display_name(user):
     if user.first_name:
@@ -205,7 +217,7 @@ def get_display_name(user):
         display_name = ''
 
     return display_name
-
+set_credintials('token_auth','101020')
 
 def get_mentionable_display_name(user):
     if user.username:

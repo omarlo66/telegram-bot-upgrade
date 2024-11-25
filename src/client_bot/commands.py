@@ -64,7 +64,6 @@ class Commands:
 
         else:
             cache = self.caches[user_id] = Cache()
-
         return cache
 
         # ---------- Permission decorators ---------- #
@@ -108,13 +107,18 @@ class Commands:
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         cache = self.get_current_cache(update.effective_sender.id)
         cache.current_step = BotStep.START
-
-        keyboard = [
-            [InlineKeyboardButton(text='تفعيل الخدمة', callback_data='subscribe')],
-            [InlineKeyboardButton(text='استعلام عن الخدمات', callback_data='mysubscriptions')],
-            [InlineKeyboardButton(text='تمديد العضوية', callback_data='renew')],
-            [InlineKeyboardButton(text='مراسلة الدعم', callback_data='contact_support')]
-        ]
+        keyboard = get_inline_keyboard([
+            {'text':'تفعيل الخدمة','callback':'subscribe'},
+            {'text':'تفعيل الخدمة','callback':'subscribe'},
+            {'text':'تفعيل الخدمة','callback':'subscribe'},
+            {'text':'تفعيل الخدمة','callback':'subscribe'},
+        ],label_field='text',value_field='callback',items_per_row=2)
+        #keyboard = [
+        #    [InlineKeyboardButton(text='تفعيل الخدمة', callback_data='subscribe')],
+        #    [InlineKeyboardButton(text='استعلام عن الخدمات', callback_data='mysubscriptions')],
+        #    [InlineKeyboardButton(text='تمديد العضوية', callback_data='renew')],
+        #    [InlineKeyboardButton(text='مراسلة الدعم', callback_data='contact_support')]
+        #]
 
         reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -140,7 +144,7 @@ class Commands:
             items_per_row=1
         )
 
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        reply_markup = InlineKeyboardButton(keyboard)
         await update.effective_message.reply_text("يرجى اختيار قناة للاشتراك:", reply_markup=reply_markup)
 
     async def my_subscriptions(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

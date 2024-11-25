@@ -1,0 +1,39 @@
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creditials</title>
+</head>
+
+<body class="">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap-grid.min.css" integrity="sha512-i1b/nzkVo97VN5WbEtaPebBG8REvjWeqNclJ6AItj7msdVcaveKrlIIByDpvjk5nwHjXkIqGZscVxOrTb9tsMA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <div class="contaier">
+        <form method="post" class="form w-100 d-flex flex-column gap-2 rounded align-items-center justify-content-center mt-5">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            <label for="username">username</label>
+            <input name="username" class="p-2 rounded" type="text">
+            <label for="password">password</label>
+            <input name="password" class="p-2 rounded" type="password">
+            <button class="btn btn-danger" type="button" id="login" >login</button>
+        </form>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js" integrity="sha512-ykZ1QQr0Jy/4ZkvKuqWn4iF3lqPZyij9iRv6sGqLRdTPkY69YX6+7wvVGmsdBbiIfN/8OdsI7HABjvEok6ZopQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        $('#login').click(()=>{
+            $.post('/login',{
+                username: $('input[name="username"]').val(),
+                password: $('input[name="password"]').val()
+            },(data)=>{ if(data){
+                location.href = '/subscriber-activity'
+            }else{ alert('many trials may cause block') }})
+        });
+    </script>
+</body>
+</html>
+{% endblock %}

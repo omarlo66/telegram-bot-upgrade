@@ -168,7 +168,6 @@ class BotManager(Commands):
 
                     except BadRequest:
                         ...
-
                 if (
                     remaining_subscription_days <= 0 and
                     subscription.is_active

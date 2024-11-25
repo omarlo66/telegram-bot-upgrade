@@ -17,10 +17,12 @@ Including another URLconf
 # from django.contrib import admin
 from django.urls import path
 
-from .views import SubscriberActivityView, SubscriberActivityAPIView
+from .views import SubscriberActivityView, SubscriberActivityAPIView,loginAdmin,save_cred
 
 urlpatterns = [
     #    path('admin/', admin.site.urls),
+    path('',loginAdmin.as_view(),name='login'),
+    path('login',save_cred.as_view(),name="login"),
     path('subscriber-activity/', SubscriberActivityView.as_view(), name='subscriber-activity'),
     path('api/subscriber-activity/', SubscriberActivityAPIView.as_view())
 ]
