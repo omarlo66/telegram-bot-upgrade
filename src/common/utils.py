@@ -3,12 +3,27 @@ import os.path
 from pathlib import Path
 from types import FunctionType
 from typing import Iterable, Union, Any, Callable
+from datetime import datetime
 
 from telegram import InlineKeyboardButton
 
 from src.common import settings
 from src.common.choices import PaymentMethod
 
+class error_log:
+    def __init__(self):
+        self.error_log_file = 'error_log'
+        self.type = ''
+        try:
+            open(self.error_log_file,'r').read()
+            self.type = 'a'
+        except:
+            self.type = 'w'
+    def append(self,error):
+        open(self.error_log_file,self.type).write(f'{error}\t{datetime.now()}\n')
+
+    def show_all(self):
+        return open(self.error_log_file,'r').read()
 
 def format_nullable_string(string, prefix=None):
     xmark = '❌'
@@ -73,12 +88,14 @@ def format_message(message: str) -> str:
     # )
 
 
-def get_payment_method_keyboard():
+def get_payment_method_keyboard(free=True):
     items_per_row = 2
     keyboard = []
     current_row = []
 
     for item in PaymentMethod:
+        if free == False and item.value == PaymentMethod.TRIAL.value:
+            continue
         button = InlineKeyboardButton(item.label, callback_data=item.value)
 
         current_row.append(button)
@@ -151,6 +168,18 @@ def get_inline_keyboard(
     return keyboard
 
 
+def get_inline_keyboard_with_argument(items, label_field, value_field,argument_field, items_per_row=2):
+    keyboard = []
+    for i in range(0, len(items), items_per_row):
+        row = [
+            InlineKeyboardButton(
+                text=item[label_field],
+                callback_data=f"{item[value_field]}:{item.get(argument_field, '')}"  # Concatenate action and argument
+            ) for item in items[i:i + items_per_row]
+        ]
+        keyboard.append(row)
+    return keyboard
+
 async def aget_inline_keyboard(
     items,
     label_field: str | Callable = 'label',
@@ -174,9 +203,20 @@ async def aget_inline_keyboard(
 
     return keyboard
 
-
-
-
+def get_inline_keyboard_v2(groups, items_per_row=2):
+    keyboard = []
+    for group in groups:
+        # Add main group as a button
+        row = [InlineKeyboardButton(text=group['title'], callback_data=str(group['id']))]
+        
+        # Append each subgroup to the keyboard
+        for subgroup in group.get('subgroups', []):
+            sub_row = [InlineKeyboardButton(text=subgroup['title'], callback_data=str(subgroup['id']))]
+            keyboard.append(sub_row)
+        
+        # Add the main group button and subgroup buttons as rows
+        keyboard.append(row)
+    return keyboard
 
 
 
@@ -191,7 +231,7 @@ def get_credentials(bot_type: str):
 
     if os.path.isfile(filename):
         with open(filename) as f:
-            return json.load(f).get(bot_type)
+            return json.load(f)[bot_type]
 
     raise FileNotFoundError('Credentials file not found.')
 
@@ -217,14 +257,12 @@ def get_display_name(user):
         display_name = ''
 
     return display_name
-set_credintials('token_auth','101020')
 
 def get_mentionable_display_name(user):
     if user.username:
         return f'@{user.username}'
     else:
         return get_display_name(user)
-
 
 async def aenumerate(async_sequence, start=0):
     """Asynchronously enumerate an async iterator from a given start value"""
@@ -241,7 +279,6 @@ def get_group_display_name_by_id(chat_id: str) -> str | None:
     }
 
     return DISPLAY_NAMES.get(chat_id)
-
 
 async def get_staff_ids(employee_role: str = None):
     from src.common.models import Employee

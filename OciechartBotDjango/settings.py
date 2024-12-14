@@ -25,7 +25,9 @@ SECRET_KEY = 'django-insecure-)^plh&vgux^ey*xyp&*8^(i-r@bxy3q5=g&_nx5-oo@g_*op=-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['ociecharts1000.pythonanywhere.com', 'localhost:8000', '127.0.0.1']
+ALLOWED_HOSTS = ['ociecharts1000.pythonanywhere.com', 'localhost:8000', '127.0.0.1','localhost',
+    '127.0.0.1',      # Local IP address
+    '[::1]', ]
 
 
 # Application definition

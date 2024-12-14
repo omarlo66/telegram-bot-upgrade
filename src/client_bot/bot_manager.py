@@ -20,8 +20,11 @@ from src.common import pendulum
 from src.common.db import Database
 from src.common.choices import SubscriptionRequestStatus, PaymentMethod
 from src.common.formatters import format_date
-from src.common.models import SubscriptionRequest, User, OfferMessage
+from src.common.models import SubscriptionRequest, User, OfferMessage, Training
+from src.common.models.group import Group
+from asgiref.sync import sync_to_async
 
+from src.common.utils import error_log
 
 # noinspection PyMethodMayBeStatic
 class BotManager(Commands):
@@ -74,6 +77,9 @@ class BotManager(Commands):
         self.application.add_error_handler(self.error_handler)
 
     async def error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if update == None:
+            error_log().append(context.error)
+            return
         await context.bot.send_message(
             chat_id=settings.DEVELOPER_CHAT_ID,
             text=(
@@ -105,6 +111,12 @@ class BotManager(Commands):
         )
 
         self.application.job_queue.run_repeating(
+            self._resolve_training_requests,
+            interval=datetime.timedelta(seconds=10),
+            first=0
+        )
+
+        self.application.job_queue.run_repeating(
             self._send_offer_messages,
             interval=one_hour,
             first=next_hour
@@ -116,7 +128,8 @@ class BotManager(Commands):
 
         async for user in User.objects.all():
             if not await user.subscriptions.filter(is_active=True).aexists():
-                for group in settings.GROUPS:
+                groups = await sync_to_async(lambda: list(Group.objects.filter(parent_id=None)))()
+                for group in groups:
                     try:
                         await ban_chat_member(
                             chat_id=group['id'],
@@ -136,7 +149,7 @@ class BotManager(Commands):
                     subscription.user_notified_for_renewal_count == 0
                 ):
                     subscription_end_date = subscription.end_date.strftime('%d/%m/%Y')
-                    message = 'يرجى الانتباه. سيتم انتهاء اشتراكك في ' + subscription_end_date + '.'
+                    message = f'يرجى الانتباه. سيتم انتهاء اشتراكك في {subscription_end_date}.n\n {subscription.chat_name}\n\n'
 
                     if self.db.salla_link:
                         message += 'يمكنك اعادة الاشتراك عن طريق سلة: ' + self.db.salla_link
@@ -153,7 +166,7 @@ class BotManager(Commands):
                     remaining_subscription_days == 1 and
                     subscription.user_notified_for_renewal_count < 2
                 ):
-                    message = 'سيتم انتهاء اشتراكك اليوم. جدد اشتراكك الان للاستمتاع بمزايا قناتنا الخاصة. '
+                    message = f'سيتم انتهاء اشتراكك اليوم. جدد اشتراكك الان للاستمتاع بمزايا قناتنا الخاصة. \n\n {subscription.chat_name}'
 
                     if self.db.salla_link:
                         message += 'يمكنك اعادة الاشتراك عن طريق سلة: ' + self.db.salla_link
@@ -184,7 +197,7 @@ class BotManager(Commands):
                             await context.bot.send_message(
                                 chat_id=user.telegram_id,
                                 text=f'لقد انتهى اشتراكك في قناة {subscription.chat_name}'
-                                     f'. يمكنك تجديد الاشتراك باستخدام subscribe/'
+                                     f'. يمكنك تجديد الاشتراك '
                             )
 
                         except:
@@ -194,99 +207,273 @@ class BotManager(Commands):
                         ...
 
     async def _resolve_subscription_requests(self, context: ContextTypes.DEFAULT_TYPE):
-        requests = SubscriptionRequest.objects.filter(
-            status__in=(
-                SubscriptionRequestStatus.APPROVED,
-                SubscriptionRequestStatus.DECLINED
-            )
-        )
+        try:
+            requests = await sync_to_async(
+                    lambda: list(SubscriptionRequest.objects.filter(
+                        status__in=(SubscriptionRequestStatus.APPROVED, SubscriptionRequestStatus.DECLINED),
+                        anounced=False
+                    ))
+                )()
+            for request in requests:
+                error_log().append(f'requests is pending: {request}')
+                try:
+                    if request.is_approved:
+                        subscription = await request.asubscription
+                        if subscription:
+                            subscription.invoice_number = request.invoice_number
+                            subscription.end_date = request.end_date
+                            subscription.payment_method=PaymentMethod(request.payment_method)
+                            subscription.tradingview_id=request.tradingview_id
+                            await subscription.asave()
 
-        async for request in requests:
-            if request.is_approved:
-                subscription = await request.asubscription
+                            await self.approve_request_and_send_links_v2(
+                                context,
+                                request,
+                                message_prefix=f"تمت الموافقة على طلب تجديد اشتراكك بنجاح.\n"
+                            )
 
-                if subscription:
-                    await subscription.renew(
-                        invoice_number=request.invoice_number,
-                        end_date=request.end_date,
-                        payment_method=PaymentMethod(request.payment_method),
-                        tradingview_id=request.tradingview_id
-                    )
+                        else:
+                            try:
+                                await request.aget_or_create_subscription()
+                            except User.DoesNotExist:
+                                error_log().append('user not exist')
+                                continue
+                            error_log().append('Generating user link')
+                            await self.approve_request_and_send_links_v2(
+                                context,
+                                request,
+                                message_prefix="تم الاشتراك بنجاح.\n"
+                            )
 
-                    await self.approve_request_and_send_links(
-                        context,
-                        request,
-                        message_prefix=f"تمت الموافقة على طلب تجديد اشتراكك بنجاح.\n"
-                    )
+                        await request.mark_as_completed()
 
-                else:
-                    try:
-                        await request.aget_or_create_subscription()
+                    elif request.is_declined:
+                        await context.bot.send_message(
+                            chat_id=request.user_telegram_id,
+                            text=f"للأسف لم يتم قبول طلبك بالإنضمام للمجموعه لسبب التالي: \n\n {request.message} \n\n لا تقلق يمكنك طلب المساعده من الدعم نحن هما من أجل مساعدتك /start"
+                        )
+                        await request.mark_as_completed()
+                except Exception as e:
+                    error_log().append(f'error in request {request.username} {e}')
+        except Exception as e:
+            error_log().append(f'error in sub-requests: {e}')
 
-                    except User.DoesNotExist:
-                        continue
-
-                    await self.approve_request_and_send_links(
-                        context,
-                        request,
-                        message_prefix="تم الاشتراك بنجاح.\n"
-                    )
-
-                await request.mark_as_completed()
-
-            elif request.is_declined:
-                await context.bot.send_message(
-                    chat_id=request.user_telegram_id,
-                    text="Your request has been declined. Please contact support for more information."
-                )
-                await request.mark_as_completed()
-
-    async def approve_request_and_send_links(self, context, request, message_prefix: str):
-        end_date_formatted = format_date(request.end_date)
+    async def approve_request_and_send_links_v2(self, context, request, message_prefix: str):
+        async def _debug_log(message, details=None):
+            """
+            Helper function to log detailed debug messages with optional context details.
+            """
+            if details:
+                message += f" | Details: {details}"
+            print(message, flush=True)
+            error_log().append(message)
 
         try:
+            # Format the subscription end date
+            end_date_formatted = format_date(request.end_date)
             subscription_end_date = datetime.datetime.strptime(
                 request.end_date.isoformat(),
                 '%Y-%m-%d'
             )
 
-            invite_links: list[str] = []
+            # Fetch main groups asynchronously
+            groups = await sync_to_async(lambda: list(Group.objects.filter(parent_id=None)))()
+            if not groups:
+                await _debug_log("No main groups found.")
+                return  # Exit early if no groups exist
 
-            for group in settings.GROUPS:
-                if group['id'] == request.chat_id:
+            invite_links = []  # To store all generated invite links
+
+            # Iterate through main groups
+            for group in groups:
+                try:
+                    # Skip if the group does not match the request's chat ID
+                    if group.telegram_id != request.chat_id:
+                        continue
+
+                    # Generate invite link for the main group
                     main_invite_link = await context.bot.create_chat_invite_link(
                         chat_id=request.chat_id,
                         creates_join_request=False,
                         member_limit=1,
                         expire_date=subscription_end_date
                     )
-
                     invite_links.append(main_invite_link.invite_link)
+                    await _debug_log(
+                        "Main group invite link generated.",
+                        {"group_id": group.telegram_id, "invite_link": main_invite_link.invite_link}
+                    )
 
-                    for subgroup in group['subgroups']:
-                        subgroup_invite_link = await context.bot.create_chat_invite_link(
-                            chat_id=subgroup['id'],
+                    # Fetch subgroups linked to the main group
+                    subgroups = await sync_to_async(
+                        lambda: list(Group.objects.filter(parent_id=group.telegram_id))
+                    )()
+                    if not subgroups:
+                        await _debug_log(
+                            f"No subgroups found for main group {group.telegram_id}."
+                        )
+
+                    # Iterate through subgroups and generate invite links
+                    for subgroup in subgroups:
+                        try:
+                            subgroup_invite_link = await context.bot.create_chat_invite_link(
+                                chat_id=subgroup.telegram_id,
+                                creates_join_request=False,
+                                member_limit=1,
+                                expire_date=subscription_end_date
+                            )
+                            invite_links.append(subgroup_invite_link.invite_link)
+                            await _debug_log(
+                                "Subgroup invite link generated.",
+                                {"subgroup_id": subgroup.telegram_id, "invite_link": subgroup_invite_link.invite_link}
+                            )
+                        except Exception as subgroup_error:
+                            # Log specific errors with subgroups
+                            await _debug_log(
+                                f"Error generating invite link for subgroup {subgroup.telegram_id}.",
+                                {"error": str(subgroup_error), "subgroup_id": subgroup.telegram_id}
+                            )
+
+                except Exception as main_group_error:
+                    # Log specific errors with the main group
+                    await _debug_log(
+                        f"Error generating invite link for main group {group.telegram_id}.",
+                        {"error": str(main_group_error), "group_id": group.telegram_id}
+                    )
+
+            # If invite links were successfully generated, send them to the user
+            if invite_links:
+                formatted_invite_links = '\n'.join(invite_links)
+                await context.bot.send_message(
+                    chat_id=request.user_telegram_id,
+                    text=(
+                        f"{message_prefix}يرجى الانضمام عبر الروابط التالية: \n"
+                        f"{formatted_invite_links}\n"
+                        f"ينتهي اشتراكك في {end_date_formatted}"
+                    )
+                )
+                await _debug_log("Invite links sent to user.", {"user_id": request.user_telegram_id})
+            else:
+                # Log if no invite links were generated
+                await _debug_log("No invite links generated for the request.")
+                await context.bot.send_message(
+                    chat_id=request.user_telegram_id,
+                    text="لم نتمكن من إنشاء روابط الدعوة الخاصة بك. الرجاء المحاولة لاحقًا أو الاتصال بالدعم."
+                )
+
+        except Exception as error:
+            # Catch and log unexpected errors
+            error_message = f"Unexpected error in approve_request_and_send_links: {error}"
+            await _debug_log(error_message, {"user_id": request.user_telegram_id, "request_id": request.id})
+            await context.bot.send_message(
+                chat_id=request.user_telegram_id,
+                text="حدث خطأ غير متوقع أثناء معالجة طلبك. الرجاء المحاولة لاحقًا أو الاتصال بالدعم."
+            )
+
+
+    async def approve_request_and_send_links(self, context, request, message_prefix: str):
+        try:
+            # Format the end date
+            end_date_formatted = format_date(request.end_date)
+            subscription_end_date = datetime.datetime.strptime(
+                request.end_date.isoformat(),
+                '%Y-%m-%d'
+            )
+
+            # Retrieve main groups asynchronously
+            groups = await sync_to_async(lambda: list(Group.objects.filter(parent_id=None)))()
+            invite_links = []
+
+            # Iterate through groups to create invite links
+            for group in groups:
+                if group.telegram_id == request.chat_id:
+                    try:
+                        # Create an invite link for the main group
+                        main_invite_link = await context.bot.create_chat_invite_link(
+                            chat_id=request.chat_id,
                             creates_join_request=False,
                             member_limit=1,
                             expire_date=subscription_end_date
                         )
+                        invite_links.append(main_invite_link.invite_link)
 
-                        invite_links.append(subgroup_invite_link.invite_link)
+                        # Retrieve and iterate through subgroups
+                        subgroups = await sync_to_async(lambda: list(Group.objects.filter(parent_id=group.telegram_id)))()
+                        for subgroup in subgroups:
+                            try:
+                                subgroup_invite_link = await context.bot.create_chat_invite_link(
+                                    chat_id=subgroup.telegram_id,
+                                    creates_join_request=False,
+                                    member_limit=1,
+                                    expire_date=subscription_end_date
+                                )
+                                invite_links.append(subgroup_invite_link.invite_link)
+                            except Exception as subgroup_error:
+                                # Handle potential `ChatNotFound` or other subgroup errors
+                                print(f"Error with subgroup {subgroup.telegram_id}: {subgroup_error}", flush=True)
+                                error_log().append(f"Error with subgroup {subgroup.telegram_id}: {subgroup_error}")
 
-            formatted_invite_links = '\n'.join(invite_links) + '\n'
+                    except Exception as main_group_error:
+                        # Handle potential `ChatNotFound` or other main group errors
+                        print(f"Error with main group {group.telegram_id}: {main_group_error}", flush=True)
+                        error_log().append(f"Error with main group {group.telegram_id}: {main_group_error}")
 
-            await context.bot.send_message(
-                chat_id=request.user_telegram_id,
-                text=(
-                    message_prefix +
-                    f'يرجى الانضمام عبر الروابط التالية: \n' +
-                    formatted_invite_links +
-                    f"ينتهي اشتراكك في {end_date_formatted}"
+            # Send message with formatted invite links if any links were generated
+            if invite_links:
+                formatted_invite_links = '\n'.join(invite_links) + '\n'
+                await context.bot.send_message(
+                    chat_id=request.user_telegram_id,
+                    text=(
+                        message_prefix +
+                        'يرجى الانضمام عبر الروابط التالية: \n' +
+                        formatted_invite_links +
+                        f"ينتهي اشتراكك في {end_date_formatted}"
+                    )
                 )
-            )
+            else:
+                error_log().append("No invite links generated.")
 
         except Exception as error:
+            # Handle any unexpected errors
             print(error, flush=True)
+            error_log().append(f'Error in announcing client subscription update: {error}')
+
+    async def training_reminder(self,context: ContextTypes.DEFAULT_TYPE):
+        today = datetime.datetime.today()
+        date = today.date()
+        time = today.time()
+        training_ = await Training.objects.filter(session_date=date,status=SubscriptionRequestStatus.APPROVED).all()
+        for training in training_:
+            if training.session_time > time:
+                training.status = SubscriptionRequestStatus.COMPLETED
+                await training.asave()
+
+            if training.session_time == time:
+                context.bot.send_message(training.telegram_id,'أقترب موعد التدريب كن على أستعداد')
+                training.status = SubscriptionRequestStatus.COMPLETED
+                await training.asave()
+
+    async def _resolve_training_requests(self, context: ContextTypes.DEFAULT_TYPE):
+        # Iterate over approved requests asynchronously
+        async for request in Training.objects.filter(status=SubscriptionRequestStatus.APPROVED, anounced=False).all():
+            try:
+                await context.bot.send_message(request.telegram_id, request.message)
+                request.anounced = True
+                await request.asave()  # Await the save operation
+            except Exception as e:
+                error_log().append(f'Cannot announce user for their approved training due to: {e}')
+
+        # Iterate over rejected requests asynchronously
+        async for request in Training.objects.filter(status=SubscriptionRequestStatus.DECLINED, anounced=False).all():
+            try:
+                message = request.rejected_format()  # If this is not async, do not await
+                await context.bot.send_message(request.telegram_id, message)
+                request.anounced = True
+                request.status = SubscriptionRequestStatus.COMPLETED
+                await request.asave()  # Await the save operation
+            except Exception as e:
+                error_log().append(f'Cannot announce user for their rejected training due to: {e}')
+
 
     async def _send_offer_messages(self, context: ContextTypes.DEFAULT_TYPE):
         async for message in OfferMessage.objects.all():

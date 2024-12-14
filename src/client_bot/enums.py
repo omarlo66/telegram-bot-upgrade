@@ -20,3 +20,15 @@ class BotStep:
     # contact support
     CONTACT_SUPPORT = 30
     RESPOND_TO_SUPPORT = 31
+
+    #training request
+    TRAINING_REQUEST = 40
+    TRAINING_TIME = 41
+    TRAINING_PAYMENT = 42
+    TRAINING_INVOICE = 43
+    SEND_TRAINING_REQUEST = 44
+    TRAINING_REQUEST_UPDATE = 45
+
+    #feedback
+    FEEDBACK = 50
+    FEEDBACK_MESSAGE = 51

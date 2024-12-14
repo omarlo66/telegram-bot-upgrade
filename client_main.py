@@ -19,7 +19,7 @@ if __name__ == '__main__':
     credentials = get_credentials('client')
 
     bot_manager = BotManager(
-        token=credentials['bot_token']
+        token= credentials
     )
     
     bot_manager.run()

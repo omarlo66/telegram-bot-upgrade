@@ -10,6 +10,7 @@ class Employee(models.Model, HumanEntityMixin):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     role = models.CharField(max_length=30, choices=EmployeeRole.choices)
+    have_task = models.BooleanField(default=False)
 
     @classmethod
     def from_json(cls, data: dict) -> tuple['Employee', bool]:

@@ -10,6 +10,7 @@ from src.admin_bot.enums import BotStep
 import src.common.models
 from src.common.choices import PaymentMethod
 from src.common.exceptions import SubgroupAlreadyExists, SubgroupIsMainGroup
+from src.common.models.subscription_request import SubscriptionRequest
 
 
 class Cache(SimpleNamespace):
@@ -20,6 +21,8 @@ class Cache(SimpleNamespace):
     subscription_end_date: Date | None
     current_step: BotStep | None = None
 
+    reject_user_id: Union['src.common.models.SubscriptionRequest', None] = None
+    training_row: Union['src.common.models.Training',None] = None
     renew_user_id: str | None = None
     renew_subscription_id: int | None = None
     renew_end_date: Date | None = None
@@ -52,5 +55,11 @@ class Cache(SimpleNamespace):
         self.group_family_subgroups.append(subgroup)
 
     def clear(self):
-        self.group_family_subgroups.clear()
-        self.cleanup_group_users.clear()
+        try:
+            self.group_family_subgroups.clear()
+        except:
+            pass
+        try:
+            self.cleanup_group_users.clear()
+        except:
+            pass

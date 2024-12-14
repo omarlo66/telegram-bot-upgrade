@@ -3,11 +3,22 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Chart.js Example</title>
+    <title>Dashboard | Ocie Chart</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@3.7.2/dist/vuetify.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <style>
+        * {
+            font-family: 'cairo';
+        }
+
+        body {
+            background: rgb(193, 254, 216);
+            background: linear-gradient(90deg, rgba(193, 254, 216, 0.31976540616246496) 57%, rgba(189, 247, 219, 1) 84%);
+        }
+
         .flex {
             display: flex;
         }
@@ -24,201 +35,357 @@
             border: 1px solid #000;
             border-radius: 5px;
             padding: 10px;
-            margin: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: 1%;
+            box-shadow: 0 0 10px rgba(0, 0, 1, 1);
+            min-width: 100px;
+            width: 25%;
         }
 
         .width-50p {
             width: 50%;
         }
+        #myChart2{
+            max-width: 300px;
+            max-height: 300px;
+        }
     </style>
-
 </head>
 
-<body>
-    <div class="container">
-        <h1 style="text-align: center" >احصائيات الانضمام والمغادرة</h1>
+<body class="">
+    <div class="mt-2 rounded w-100 p-5">
+        <h1 style="text-align: center; margin-top: 50px;">احصائيات الانضمام والمغادرة</h1>
         <div id="app">
             <v-locale-provider rtl>
-                <v-container>
-                    <div class="flex flex-between" style="margin-top: 40px">
-                        <div class="flex flex-between">
-                            <div class="card text-center">
+                <v-container class="mb-2 mt-2">
+                    <div class="flex flex-between mb-5 mt-5 flex-wrap flex-column">
+                        <div class="flex flex-between flex-wrap">
+                            <div class="card text-center rounded bg-primary text-white border-none">
                                 <h3>اجمالي الاعضاء الحالي</h3>
                                 <h2>[[ total_members ]]</h2>
                             </div>
-
-                            <div class="card text-center">
+                            <div class="card text-center bg-info text-white border-none">
                                 <h3>أعلى معدل انضمام في يوم واحد</h3>
                                 <h2>[[ most_joins_in_a_day ]]</h2>
                             </div>
-                        </div>
-
-                        <div class="flex flex-between">
-                            <div class="card text-center">
+                            <div class="card text-center bg-info text-white border-none">
+                                <h3>تاريخ أعلى معدل إنضمام</h3>
+                                <h2>[[ most_joins_in_a_day_date ]]</h2>
+                            </div>
+                            <div class="card text-center bg-danger text-white border-none">
                                 <h3>المشتركين خلال شهر</h3>
                                 <h2>[[ joined_within_a_month_percentage ]]%</h2>
                             </div>
-
-                            <div class="card text-center">
+                            <div class="card text-center bg-dark text-white border-none">
                                 <h3>المغادرين خلال شهر</h3>
                                 <h2>[[ leaving_within_a_month_percentage ]]%</h2>
                             </div>
-
-                            <div class="card text-center">
+                            <div class="card text-center bg-success text-white border-none">
                                 <h3>نسبة النمو الشهرية</h3>
                                 <h2>[[ monthly_growth_percentage ]]%</h2>
                             </div>
                         </div>
                     </div>
-
-                    <div class="flex flex-between">
-
-                        <div class="width-50p">
-                            <v-data-table :headers="tableHeaders" :items="tableData">
-                            </v-data-table>
-                        </div>
-
-                        <div class="width-50p">
-                            <div style="margin-top: 40px;">
-                                {# <v-btn @click="fetchData('day')">يوم</v-btn>#}
-                                <v-btn @click="fetchData('week')" style="margin-left: 10px">اسبوع</v-btn>
-                                <v-btn @click="fetchData('month')" style="margin-left: 10px">شهر</v-btn>
+                    <div class="flex flex-between flex-wrap flex-column gap-4 p-2">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between">
+                            <div class="w-50 h-50 mh-50 p-2 bg-light flex-wrap" style="max-height: fit-content;">
+                                <div style="margin-top: 40px;" class="w-100 d-flex flex-center align-items-center">
+                                    <v-btn @click="fetchData('day')" style="margin-left: 10px" id="day"
+                                        class="btn">يوم</v-btn>
+                                    <v-btn @click="fetchData('week')" style="margin-left: 10px" id="week"
+                                        class="btn">اسبوع</v-btn>
+                                    <v-btn @click="fetchData('month')" style="margin-left: 10px" id="month"
+                                        class="btn btn-danger">شهر</v-btn>
+                                </div>
+                                <canvas id="myChart" width="400" height="200" class="bg-white rounded p-2"></canvas>
                             </div>
-                            <canvas id="myChart" width="400" height="400"></canvas>
+                            <div class="w-50">
+                                <canvas id="myChart2" width="200" height="200" class="bg-white rounded p-2"></canvas>
+                            </div>
                         </div>
                     </div>
-                </v-container>
-
-            </v-locale-provider>
-
+                    <div class="box search p-4 flex w-100 border shadow rounded bg-white align-items-center justify-content-center gap-2">
+                        <input type="text" id="search" class="p-2 rounded border w-50 h-5" placeholder="بحث"
+                            style="height: 70px">
+                        <div
+                            class="w-50 d-flex flex-column align-items-center justify-content-center p-2 m-2 rounded border text-muted">
+                            <label for="dateFilter">اختر الفلتر:</label>
+                            <select id="dateFilter" class="p-2 rounded border shadow card">
+                                <option value="">اختر الفلتر</option>
+                                <option value="thisWeek">هذا الأسبوع</option>
+                                <option value="nextWeek">الأسبوع القادم</option>
+                                <option value="next2Weeks">الأسبوعين التاليين</option>
+                                <option value="thisMonth">هذا الشهر</option>
+                                <option value="nextMonth">الشهر التالي</option>
+                                <option value="next2Months">الشهرين التاليين</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="w-100 rounded p-2">
+                        <v-data-table :headers="tableHeaders" :items="tableData">
+                        </v-data-table>
+                    </div>
         </div>
+        </v-container>
+        </v-locale-provider>
     </div>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/vuetify@3.7.2/dist/vuetify.min.js"></script>
-        <script src="https://unpkg.com/vue-chartjs@3.4.0/dist/vue-chartjs.js"></script>
-        <script>
-            const { createApp, ref, onMounted } = Vue
-            const { createVuetify } = Vuetify
-            const vuetify = createVuetify()
-
-            var app = createApp({
-                delimiters: ['[[', ']]'],
-                setup() {
-                    const total_members = ref(0)
-                    const joined_within_a_month_percentage = ref('0')
-                    const leaving_within_a_month_percentage = ref('0')
-                    const monthly_growth_percentage = ref('0')
-                    const most_joins_in_a_day = ref('0')
-
-                    const tableHeaders = [
-                        { title: 'معرف التليجرام', value: 'telegram_id' },
-                        { title: 'اسم المستخدم', value: 'telegram_username' },
-                        { title: 'رقم الجوال', value: 'phone_number' },
-                        { title: 'عدد الايام المتبقية قبل المغادرة', value: 'days_left' },
-                        { title: 'التاريخ المتوقع للمغادرة', value: 'end_date' }
-                    ]
-                    const tableData = ref([])
-
-                    onMounted(() => {
-                        initChart();
-
-                        // Fetch initial data
-                        fetchData('month');
-                    })
-
-                    var myChart;
-
-                    const initChart = () => {
-                        const ctx = document.getElementById('myChart').getContext('2d');
-                        myChart = new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: [],
-                                datasets: [
-                                    {
-                                        label: 'المغادرين',
-                                        data: [],
-                                        backgroundColor: [
-                                            'rgba(255, 99, 132, 0.2)'
-                                        ],
-                                        borderColor: [
-                                            'rgba(255, 99, 132, 1)'
-                                        ],
-                                        borderWidth: 1
-                                    },
-                                    {
-                                        label: 'المنضمين',
-                                        data: [],
-                                        backgroundColor: [
-                                            'rgba(33, 174, 33, 0.2)'
-                                        ],
-                                        borderColor: [
-                                            'rgba(33, 174, 33, 1)'
-                                        ],
-                                        borderWidth: 1
-                                    }
-                                ]
-                            },
-                            options: {
-                                scales: {
-                                    y: {
-                                        beginAtZero: true
-                                    }
-                                }
-                            }
-                        });
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.7.2/dist/vuetify.min.js"></script>
+    <script src="https://unpkg.com/vue-chartjs@3.4.0/dist/vue-chartjs.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#search').keyup(function () {
+                var value = $(this).val();
+                $('.v-data-table__tr').each(function () {
+                    var count = 0;
+                    $(this).each(function () {
+                        if ($(this).text().toLowerCase().indexOf(value.toLowerCase()) > -1) {
+                            count++;
+                        }
+                    });
+                    if (count === 0) {
+                        $(this).hide();
+                    } else {
+                        $(this).show();
                     }
-
-                    const fetchData = (filter) => {
-                        $.ajax({
-                            url: `/api/subscriber-activity/?filter=${filter}`,
-                            method: 'GET',
-                            success: function (data) {
-                                if(data == 'false' || ! data){
-                                    location.href = '/'
-                                }
-                                const chartData = data.chart_data
-                                total_members.value = data.total_members
-                                joined_within_a_month_percentage.value = data.joined_within_a_month_percentage
-                                leaving_within_a_month_percentage.value = data.leaving_within_a_month_percentage
-                                monthly_growth_percentage.value = data.monthly_growth_percentage
-                                most_joins_in_a_day.value = data.most_joins_in_a_day
-                                tableData.value = data.table_data
-                                const joiningData = chartData.joined;
-                                const leavingData = chartData.left;
-
-                                myChart.data.labels = chartData.labels;
-                                myChart.data.datasets[0].data = joiningData;
-                                myChart.data.datasets[1].data = leavingData;
-                                myChart.update();
-                            },
-                            error: function (error) {
-                                location.href = "/";
-                            }
-                        });
-                    }
-                    return {
-                        total_members,
-                        joined_within_a_month_percentage,
-                        leaving_within_a_month_percentage,
-                        monthly_growth_percentage,
-                        most_joins_in_a_day,
-                        tableHeaders,
-                        tableData,
-                        fetchData
-                    }
-                }
+                });
             })
-            app.use(vuetify);
-            app.mount('#app')
+        });
+        $(document).ready(function () {
+            $('#dateFilter').change(function () {
+                const selectedFilter = $(this).val();
+                const today = new Date();
+                let startDate, endDate;
+                
+                switch (selectedFilter) {
+                    case 'thisWeek':
+                        startDate = new Date(today);
+                        endDate = new Date(today);
+                        endDate.setDate(today.getDate() + (7 - today.getDay())); // End of this week (Sunday)
+                        break;
 
-        </script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-            crossorigin="anonymous"></script>
+                    case 'nextWeek':
+                        startDate = new Date(today);
+                        startDate.setDate(today.getDate() + (7 - today.getDay()) + 1); // Start of next week (Monday)
+                        endDate = new Date(startDate);
+                        endDate.setDate(startDate.getDate() + 6); // End of next week (Sunday)
+                        break;
+
+                    case 'thisMonth':
+                        startDate = new Date(today.getFullYear(), today.getMonth(), 1); // Start of this month
+                        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // End of this month
+                        break;
+
+                    case 'next2Weeks':
+                        startDate = new Date(today);
+                        endDate = new Date(today);
+                        endDate.setDate(today.getDate() + 14); // Two weeks from today
+                        break;
+
+                    case 'next2Months':
+                        startDate = new Date(today.getFullYear(), today.getMonth(), 1); // Start of this month
+                        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                        break;
+                    case 'nextMonth':
+                        startDate = new Date(today.getFullYear(), today.getMonth() + 1, 1); // Start of this month
+                        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Two weeks from today
+                        break;
+                    default:
+                        $('tbody tr').show(); // Show all rows if no filter is selected
+                        return;
+                }
+
+                // Filter rows based on the selected date range
+                $('tbody tr').each(function () {
+                    const expiryDate = new Date($(this).find('td:nth-child(3)').text());
+                    console.log(expiryDate, startDate, endDate);
+                    if (expiryDate >= startDate && expiryDate <= endDate) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+        });
+        const { createApp, ref, onMounted } = Vue
+        const { createVuetify } = Vuetify
+        const vuetify = createVuetify()
+
+        const app = createApp({
+            delimiters: ['[[', ']]'],
+            setup() {
+                const total_members = ref(0);
+                const joined_within_a_month_percentage = ref('0');
+                const leaving_within_a_month_percentage = ref('0');
+                const monthly_growth_percentage = ref('0');
+                const most_joins_in_a_day = ref('0');
+                const most_joins_in_a_day_date = ref('0');
+
+                const tableHeaders = [
+                    { title: 'اسم المستخدم', value: 'telegram_username' },
+                    { title: 'عدد الايام المتبقية قبل المغادرة', value: 'days_left' },
+                    { title: 'التاريخ المتوقع للمغادرة', value: 'end_date' },
+                    { title: 'المجموعه', value: 'chat_name' },
+                ];
+                const tableData = ref([]);
+                const activeFilter = ref('month');
+
+                let myChart = null;
+                let myChart2 = null;
+
+                onMounted(() => {
+                    initChart();
+                    fetchData(activeFilter.value);
+                });
+
+                const initChart = () => {
+                    const ctx = document.getElementById('myChart').getContext('2d');
+                    myChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: [],
+                            datasets: [
+                                {
+                                    label: 'المغادرين',
+                                    data: [],
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    borderWidth: 1,
+                                },
+                                {
+                                    label: 'المنضمين',
+                                    data: [],
+                                    backgroundColor: 'rgba(33, 174, 33, 0.2)',
+                                    borderColor: 'rgba(33, 174, 33, 1)',
+                                    borderWidth: 1,
+                                },
+                            ],
+                        },
+                        options: {
+                            scales: {
+                                y: { beginAtZero: true },
+                            },
+                        },
+                    });
+                };
+
+                const updateCharts = (chartData, chatCounts) => {
+                    // Update bar chart
+                    if (chartData.labels && myChart) {
+                        myChart.data.labels = chartData.labels;
+                        myChart.data.datasets[0].data = chartData.left || [];
+                        myChart.data.datasets[1].data = chartData.joined || [];
+                        myChart.update();
+                    }
+
+                    // Update pie chart
+                    if (chatCounts && Object.keys(chatCounts).length) {
+                        const labels = Object.keys(chatCounts);
+                        const data = Object.values(chatCounts);
+
+                        if (myChart2) {
+                            myChart2.data.labels = labels;
+                            myChart2.data.datasets[0].data = data;
+                            myChart2.update();
+                        } else {
+                            const chart2 = document.getElementById('myChart2').getContext('2d');
+                            myChart2 = new Chart(chart2, {
+                                type: 'pie',
+                                data: {
+                                    labels,
+                                    datasets: [
+                                        {
+                                            data,
+                                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'],
+                                        },
+                                    ],
+                                },
+                            });
+                        }
+                    }
+                };
+
+                const fetchData = (filter) => {
+                    activeFilter.value = filter; // Update active filter
+                    if(filter == 'month'){
+                        $('#month').addClass('btn-danger');
+                        $('#week').removeClass('btn-danger');
+                        $('#day').removeClass('btn-danger');
+                    }else if(filter == 'week'){
+                        $('#week').addClass('btn-danger');
+                        $('#month').removeClass('btn-danger');
+                        $('#day').removeClass('btn-danger');
+                    }else{
+                        $('#day').addClass('btn-danger');
+                        $('#week').removeClass('btn-danger');
+                        $('#month').removeClass('btn-danger');
+                    }
+                    $.ajax({
+                        url: `/api/subscriber-activity/?filter=${filter}`,
+                        method: 'GET',
+                        success: (data) => {
+                            if (!data || data === 'false') {
+                                location.href = '/';
+                                return;
+                            }
+
+                            // Update percentages and counts
+                            total_members.value = data.total_members || 0;
+                            joined_within_a_month_percentage.value = data.joined_within_a_month_percentage || '0';
+                            leaving_within_a_month_percentage.value = data.leaving_within_a_month_percentage || '0';
+                            monthly_growth_percentage.value = data.monthly_growth_percentage || '0';
+                            most_joins_in_a_day.value = data.most_joins_in_a_day || '0';
+                            most_joins_in_a_day_date.value = data.most_joins_in_a_day_date || '0';
+
+                            // Populate table data
+                            tableData.value = Array.isArray(data.table_data) ? data.table_data : [];
+
+                            // Prepare chart data
+                            const chartData = data.chart_data || {};
+                            const chatCounts = tableData.value.reduce((acc, entry) => {
+                                const chatName = entry.chat_name || 'Unknown';
+                                acc[chatName] = (acc[chatName] || 0) + 1;
+                                return acc;
+                            }, {});
+
+                            // Update charts
+                            updateCharts(chartData, chatCounts);
+                        },
+                        error: () => {
+                            alert('Authorization required');
+                            const password = prompt('Enter your password');
+                            if (password) {
+                                $.post('/login', { password }, () => location.reload());
+                            }
+                        },
+                    });
+                };
+
+                return {
+                    total_members,
+                    joined_within_a_month_percentage,
+                    leaving_within_a_month_percentage,
+                    monthly_growth_percentage,
+                    most_joins_in_a_day,
+                    most_joins_in_a_day_date,
+                    tableHeaders,
+                    tableData,
+                    fetchData,
+                    activeFilter,
+                };
+            },
+        });
+
+        app.use(vuetify);
+        app.mount('#app');
+
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
 </body>
 
 </html>

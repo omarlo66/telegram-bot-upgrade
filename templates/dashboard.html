@@ -1,0 +1,681 @@
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+<section id="dash-board" class="main-bg text-white d-flex flex-column justify-content-center px-4">
+    <div class=" row container-fluid">
+
+        <h1 class="text-white h2 py-4">Ocie Chart Dashboard</h1>
+
+        <div class="row justify-content-between mb-3">
+           
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2 mb-3">
+                <div class="female female-bg rounded-4 text-center py-2 container_box">
+                    <span class="h3">Subscribers</span>
+                    <h3 class="pt-1" id="subscribers"></h3>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2 mb-3">
+              <div class="female female-bg rounded-4 text-center py-2 container_box">
+                  <span class="h3">Training</span>
+                  <h3 class="pt-1" id="training"></h3>
+              </div>
+          </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2 mb-3">
+              <div class="head-count head-count-bg rounded-4 text-center py-2 container_box">
+                  <span class="h3">Top Join</span>
+                  <h3 class="pt-1" id="most_joins_in_a_day"> </h3>
+                  <div class="badge bg-light p-2 text-muted text-white" id="most_joins_in_a_day_date"></div>
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2 mb-3">
+                <div class="male male-bg rounded-4 text-center py-2 container_box">
+                    <span class="h3">Lefted</span>
+                    <h3 class="pt-1" id="lefted"></h3>
+                </div>
+            </div>
+       
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2 mb-3">
+                <div class="full-time full-time-bg rounded-4 text-center py-2 container_box">
+                    <span class="h3"> Renewed </span><h3 class="pt-1" id="renewed"></h3></span>
+                </div>
+            </div>
+            
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2 mb-3">
+                <div class="part-time part-time-bg rounded-4 text-center py-2 container_box">
+                    <span class="h3">Feedback</span><h3 class="pt-1" id="feedback"></h3></span>
+                </div>
+            </div>
+        </div>
+        
+        </div>
+        <div class="row container-fluid  b">
+            <div class="row   mb-3">
+                <!-- Left Column (Form Elements) -->
+                <div class="col-12 col-md-4 col-lg-2  justify-content-center ">
+                    <div class="offers sec-bg text-center rounded-4 py-3 my-3">
+                        <label for="offers" class="d-block pb-2">Duration</label>
+                        <select name="timeFilter" id="timeFilter" class="offers w-75 select-input-bg text-white border-0">
+                            <option value="all" selected>All</option>
+                            <option value="month">Month</option>
+                            <option value="week">Week</option>
+                            <option value="day">Day</option>
+                        </select>
+                    </div>
+            
+                    <div class="location sec-bg text-center rounded-4 py-3">
+                        <label for="location" class="d-block pb-2">Type</label>
+                        <select name="type" id="type" class="location w-75 select-input-bg text-white border-0">
+                            <option value="all" selected>All</option>
+                            <option value="Subscribers" selected>Subscribers</option>
+                            <option value="Lefted" selected>Lefted</option>
+                            <option value="renew" selected>Renewed</option>
+                        </select>
+                    </div>
+            
+                    <div class="date sec-bg text-center rounded-4 py-3 my-3">
+                        <label for="date" class="d-block pb-2">Date</label>
+                        <select name="date" id="date" class="date w-75 select-input-bg text-white border-0">
+                            <option value="all" selected>All</option>
+                        </select>
+                    </div>
+                    <div class="check-boxs sec-bg rounded-4 py-3 d-flex flex-column align-items-center justify-content-center">
+                        <h3 class="check-box-title pb-2 text-center">Groups</h3>
+                        <input type="text" id="search_group" class="w-75 rounded border-none p-2 m-2 outline-none text-center" placeholder="search...">
+                        <div class="check-inputs mx-4" id="groups">
+                        </div>
+                    </div>
+                </div>
+            
+                <!-- Right Column (Charts) -->
+                <div class="col-12  col-md-8 col-lg-10  pt-3 ">
+                    <div class="row ms-auto">
+                        <div class="col-12   col-lg-4 mb-3">
+                            <div class="chart sec-bg rounded-4">
+                                <canvas id="barChart" class="text-white" height="195"></canvas>
+                            </div>
+                        </div>
+                       <div class="col-12  col-lg-4 mb-3">
+                            <div class="chart sec-bg rounded-4">
+                                <canvas id="lineChart" height="195"></canvas>
+                            </div>
+                        </div>
+                       <div class="col-12  col-lg-4 mb-3">
+                            <div class="chart sec-bg rounded-4">
+                                <canvas id="lineChart2" height="195"></canvas>
+                            </div>
+                        </div>
+                       <div class="col-12  col-lg-4 mb-3">
+                            <div class="chart sec-bg rounded-4">
+                                <canvas id="horizontalBarChart" height="195"></canvas>
+                            </div>
+                        </div>
+                       <div class="col-12  col-lg-4 mb-3">
+                            <div class="chart sec-bg rounded-4">
+                                <canvas id="verticalbarchart" height="195"></canvas>
+                            </div>
+                        </div>
+                       <div class="col-12  col-lg-4 mb-3">
+                            <div class="chart sec-bg rounded-4">
+                                <canvas id="verticalbarchart2" height="195"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </div>
+</section>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<style>
+    .main-bg{background-color: #1C2251;}
+.sec-bg{background-color: #2A417D;}
+.head-count-bg{background-color: #287E8F;}
+.female-bg{background-color: #15CAB7;}
+.male-bg{background-color: #F6B53E;}
+.full-time-bg{background-color: #EF8B5A;}
+.part-time-bg{background-color: #E85E77;}
+.select-input-bg{background-color: #3860A8;}
+#dash-board{
+   min-height: 100vh;
+}
+
+select{
+    cursor: pointer;
+    padding: .2rem;
+}
+select:focus{
+    outline: none;
+    border: none;
+}
+
+.check-box-title{
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+.custom-checkbox input[type="checkbox"] {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0; 
+  }
+  
+ 
+  .custom-checkbox span {
+    display: inline-block;
+    width: 1.25rem; 
+    height: 1.25rem; 
+    background-color: #3860A8 ;
+    border-radius: 4px;
+    margin-right: .8rem; 
+    transition: all 0.3s ease; 
+  }
+  
+  
+  .custom-checkbox input[type="checkbox"]:checked + span {
+    background-color: #2a4a99; 
+    border-color: #2a4a99;
+    position: relative;
+  }
+  
+  .custom-checkbox input[type="checkbox"]:checked + span::after {
+    content: "✓";
+    color: white;
+    font-size: .875remx;
+    font-weight: bold;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%); 
+  }
+  
+
+  .custom-checkbox span:hover {
+    background-color: #ddd;
+  }
+
+  .chart{
+    width: 100%;
+  }
+ 
+ #pieChart{
+    height: 200px !important;
+    width: 200px !important;
+ }
+ #pieChart-2{
+    height: 255px !important;
+    width: 255px !important;
+ }
+ .container_box{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+ }
+ .container_box .h3{
+    text-decoration: underline #fff 2px;
+    text-underline-offset: 5px;
+    margin-bottom: 3px;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+  }
+
+ @media (max-width: 1294px) {
+.chart{
+  height: 280px;
+}
+}
+ @media (max-width: 1166px) {
+.female span , .male span , .full-time span , .part-time span , .head-count span {
+  font-size: 22px;
+}
+  
+}
+</style>
+
+<script>
+  let dates = [];
+  let selectedDate_input = $('#date');
+  let selectedDuration_input = $('#timeFilter');
+  let selectedType = $('#type').val();
+  let selectedGroups = [];
+
+  let chart_1_labels = [];
+  let chart_1_datasets = [];
+
+  let chart_2_labels = [];
+  let chart_2_datasets = [];
+
+  function callApi(url,method='GET',data){
+    if(method == 'GET'){
+      url = url + "?" + Object.keys(data).map(key => key + '=' + data[key]).join('&');
+      fetch(url).then((res)=>{
+        res.json().then((data)=>{
+          let avg_feedback = 0;
+          let reviews_count = 0;
+          data.reviews.forEach(review => {
+            avg_feedback += review.review;
+            reviews_count++;
+          });
+
+          let avg = (avg_feedback/reviews_count).toFixed(2);
+          $('#feedback').text(`${avg} / 5`);
+          
+          $('#subscribers').text(data.total_members);
+          $('#lefted').text(data.total_lefted);
+          $('#renewed').text(data.total_renewed);
+          $('#feedback').text(data.total_feedback);
+          $('#most_joins_in_a_day').text(data.most_joins_in_a_day);
+          $('#most_joins_in_a_day_date').text(data.most_joins_in_a_day_date.split('T')[0]);
+          $('#training').text(data.training.length);
+
+          data.groups.forEach(group => {
+            insert_groups(group);
+            insert_date(group.date);
+          });
+
+          data.training.forEach(training => {
+            insert_date(training.date);
+          });
+        });
+      });
+    }
+  }
+  function insert_groups(array,filter=true){
+    console.log(selectedGroups);
+    if (selectedGroups && selectedGroups.length > 0) {
+        chart_1_labels = selectedGroups.filter(g => $(g).text()).map(g => $(g).text().trim().replace('\n',''));
+        chart_1_datasets = [{
+            label: 'Subscribers',
+            backgroundColor: 'rgba(0, 200, 200, 1)',
+            data: selectedGroups.filter(g => $(g).find('input').data('subscribers') > 0).map(g => $(g).find('input').data('subscribers'))
+        },
+        {
+          label: 'Lefted',
+          backgroundColor: 'rgba(200, 0, 200, 1)',
+          data: selectedGroups.filter(g => $(g).find('input').data('lefted') > 0).map(g => $(g).find('input').data('lefted'))
+        },
+        {
+          label: 'Renewed',
+          backgroundColor: 'rgba(0, 100, 200, 1)',
+          data: selectedGroups.filter(g => $(g).find('input').data('renewed') > 0).map(g => $(g).find('input').data('renewed'))
+        }
+      ];
+      console.log('insert group selectedGroups is not empty')
+    } else {
+        chart_1_labels = [];
+        chart_1_datasets = [];
+    }
+
+    if(filter == true){
+      $('#groups').append(`
+          <label class="custom-checkbox d-flex align-items-center w-100 mt-2 flex-column rounded border p-2 justify-content-center text-center">
+            <input type="checkbox" class="mw-100" data-id="${array.id}" data-subscribers="${array.subscribers}" data-lefted="${array.lefted}" data-renewed="${array.renewed}"/>
+            <span></span> ${array.title}
+          </label>
+      `);
+    }
+    show_chart1(chart_1_labels,chart_1_datasets);
+  }
+  function insert_date(date){
+    if(!dates.includes(date)){
+      dates.push(date);
+      $('#date').append(`
+      <option value="${date}">${date}</option>
+    `);
+    }
+    
+  }
+  let time_filter = $('#timeFilter').val();
+  let group_filter = $('#groupFilter').val();
+  let fetchData = callApi('/api/subscriber-activity', 'GET', {filter: time_filter});
+  let chart_1_instance = null;
+  show_chart1();
+  function show_chart1(chart_1_labels=[],chart_1_datasets=[]){
+    const ctx = document.getElementById('barChart') ;
+    if(chart_1_instance){
+      chart_1_instance.data.labels = chart_1_labels;
+      chart_1_instance.data.datasets = chart_1_datasets;
+      chart_1_instance.update();
+      console.log('updated',chart_1_labels,chart_1_datasets);
+    }else{
+        chart_1_instance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+            },
+          },
+          scales: {
+            x: {
+              stacked: true, 
+              ticks: {
+                color: '#ffffff', 
+              },
+            },
+            y: {
+              stacked: true, 
+              beginAtZero: true,
+              ticks: {
+                color: '#ffffff',
+              },
+            },
+          },
+        },
+      });
+    }
+  }
+
+  function show_chart2(){
+    //////////////////////////////////////////////////////////////
+    const ctx2 = document.getElementById('lineChart') ;
+
+    new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels: chart_2_labels, 
+        datasets: chart_2_datasets,
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top', 
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+          },
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Age Groups',
+              color: '#fff', 
+            },
+            ticks: {
+              color: '#fff',
+            },
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Terminations',
+              color: '#fff', 
+            },
+            ticks: {
+              color: '#fff', 
+            },
+          },
+        },
+      },
+    });
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  const ctx3 = document.getElementById('lineChart2');
+
+  new Chart(ctx3, {
+    type: 'line',
+    data: {
+      labels: ['20-25', '25-30', '30-35', '35-40', '>40'], 
+      datasets: [
+        {
+          label: 'Female',
+          data: [50, 60, 120, 160, 50],
+          borderColor: 'rgba(0, 200, 200, 1)', 
+          backgroundColor: 'rgba(0, 200, 200, 0.2)',
+          borderWidth: 2,
+          pointRadius: 5,
+          pointBackgroundColor: 'rgba(0, 200, 200, 1)',
+          fill: false,
+        },
+        {
+          label: 'Male',
+          data: [120, 200, 70, 52, 125], 
+          borderColor: 'rgba(0, 100, 200, 1)', 
+          backgroundColor: 'rgba(0, 100, 200, 0.2)',
+          pointRadius: 5,
+          pointBackgroundColor: 'rgba(0, 100, 200, 1)',
+          fill: false,
+        
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top', 
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+        },
+      },
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Age Groups',
+            color: '#fff', 
+          },
+          ticks: {
+            color: '#fff', 
+          },
+        },
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Terminations',
+            color: '#fff',
+          },
+          ticks: {
+            color: '#fff', 
+          },
+        },
+      },
+    },
+  });
+
+  /////////////////////////////////////////////////////////////////////////////
+  const ctx4 = document.getElementById('horizontalBarChart');
+  new Chart(ctx4, {
+    type: 'bar', 
+    data: {
+      labels: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4'], 
+      datasets: [
+        {
+          label: 'Involuntary',
+          data: [5, 10, 8, 4],
+          backgroundColor: 'rgba(0, 200, 200, 0.5)',
+          borderColor: 'rgba(0, 200, 200, 1)',
+          borderWidth: 1,
+        },
+        {
+          label: 'Voluntary',
+          data: [3, 6, 7, 2],
+          backgroundColor: 'rgba(0, 100, 200, 0.5)',
+          borderColor: 'rgba(0, 100, 200, 1)',
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      indexAxis: 'y', 
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top', 
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true, 
+          ticks: {
+            color: '#ffffff', 
+          },
+          title: {
+            display: true,
+            text: 'Number of Terminations',
+            color: '#ffffff', 
+          },
+        },
+        y: {
+          stacked: true, 
+          ticks: {
+            color: '#ffffff', 
+          },
+        },
+      },
+    },
+  });
+
+  ////////////////////////////////////////////////////////////////////////////////
+  const ctx5 = document.getElementById('verticalbarchart');
+  new Chart(ctx5, {
+    type: 'bar',
+    data: {
+      labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+      datasets: [{
+        label: '# of Votes',
+        backgroundColor: 'rgba(0, 200, 200, 1)',
+        data: [12, 19, 3, 5, 2, 3],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      scales: {
+        x: {
+
+          ticks: {
+            color: '#ffffff', 
+          },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: '#ffffff', 
+          },
+        }
+      }
+    }
+  });
+
+  ///////////////////////////////////////////////////////////////////////////////////
+  const ctx6 = document.getElementById('verticalbarchart2') ;
+  new Chart(ctx6, {
+    type: 'bar',
+    data: {
+      labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+      datasets: [{
+        label: '# of Votes',
+        backgroundColor: 'rgba(0, 200, 200, 1)',
+        data: [12, 19, 3, 5, 2, 3],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      scales: {
+        x: {
+
+          ticks: {
+            color: '#ffffff', 
+          },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: '#ffffff', 
+          },
+        }
+      }
+    }
+  });
+
+  $(document).ready(function () {
+    let searchInput = $('#search_group');
+    let boxesParent = $('#groups');
+    selectedDate_input.change(()=>{
+      selectedDate = selectedDate_input.val();
+      if(selectedDuration_input.val() == 'all'){
+        selectedGroups = [];
+        fetchData = callApi('/api/subscriber-activity', 'GET', {date: selectedDate});
+
+      }else{
+        fetchData = callApi('/api/subscriber-activity', 'GET', {filter: selectedDuration_input.val(), date: selectedDate});
+      }
+    });
+    searchInput.keyup(() => {
+      let groups_inputs = boxesParent.children();
+      let searchValue = searchInput.val().toLowerCase().trim(); // Normalize the input
+      if (!searchValue) {
+        // Show all elements if search input is empty
+        boxesParent.children().show().addClass('d-flex');
+
+        return;
+      }
+
+      // Filter through the children
+      groups_inputs.each((i, element) => {
+        let elementText = $(element).text().toLowerCase().trim(); // Normalize the element text
+        if (elementText.indexOf(searchValue) > -1) {
+          $(element).show(); // Show matching elements
+          $(element).addClass('d-flex');
+        } else {
+          $(element).hide(); // Hide non-matching elements
+          $(element).removeClass('d-flex');
+        }
+      });
+    });
+    
+    boxesParent.click(()=>{
+      boxesParent.find('input[type="checkbox"]').change(() => {
+        let notSelectedGroups = [];
+          // Separate selected and unselected groups
+          boxesParent.children().each((i, group) => {
+            const checkbox = $(group).find('input[type="checkbox"]');
+            
+          if (checkbox.is(':checked')) {
+          // Add to selected groups if not already present
+          if (!selectedGroups.includes(group)) {
+              selectedGroups.push(group);
+            }
+          } else {
+            // Add to unselected groups
+            notSelectedGroups.push(group);
+            selectedGroups = selectedGroups.filter((g) => g !== group);
+          }
+            insert_groups($(group),false);
+          });
+
+        // Reorder the DOM
+        boxesParent.empty();
+        selectedGroups.forEach((group) => boxesParent.append(group));
+        notSelectedGroups.forEach((group) => boxesParent.append(group));
+        console.log("Groups reordered based on checkbox state.");
+      });
+    });
+  });
+
+</script>

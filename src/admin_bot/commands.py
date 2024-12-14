@@ -20,18 +20,18 @@ from src.admin_bot.choices import EmployeeRole
 from src.admin_bot.enums import BotStep, InlineButtonCallbackType
 from src.admin_bot.excel_writer import ExcelWriter
 from src.admin_bot.utils import is_bot_owner, get_request_user_reply_markup, is_normal_chat_member_telethon, \
-    ban_chat_member, is_normal_chat_member_ptb
+    ban_chat_member, is_normal_chat_member_ptb, error_log
 from src.common import pendulum
-from src.common.choices import PaymentMethod
+from src.common.choices import PaymentMethod, SubscriptionRequestStatus
 from src.common.db import Database
 from src.common.exceptions import EmployeeAlreadyExists, SubgroupAlreadyExists, SubgroupIsMainGroup
 from src.common.formatters import format_date
 from src.common.models import Employee, Group, User, SenderEntity, Subscription, OfferMessage, GroupFamily, \
-    SubscriptionRequest
+    SubscriptionRequest, Training
 from src.common.utils import format_nullable_string, format_message, get_display_name, get_payment_method_keyboard, \
-    aenumerate, aget_inline_keyboard
+    aenumerate, aget_inline_keyboard, get_inline_keyboard
 from src.common.validators import get_date, get_int, ErrorMessages
-
+from asgiref.sync import sync_to_async
 
 # noinspection PyUnusedLocal,PyMethodMayBeStatic
 class Commands:
@@ -41,6 +41,10 @@ class Commands:
         self.client: TelegramClient | None = None
         self._client: TelegramClient | None = None
         self.application: Application | None = None
+        keyboard = [
+            [InlineKeyboardButton("القائمه", callback_data='/help')]
+        ]
+        self.static_keyoard = ReplyKeyboardMarkup(keyboard,resize_keyboard=True)
 
     @property
     def command_mapping(self):
@@ -57,7 +61,10 @@ class Commands:
             'offer_message': self.offer_message,
             'offer_messages': self.offer_messages,
             'group_family': self.group_family,
-            'edit': self.edit_user_subscription
+            'edit': self.edit_user_subscription,
+            'show_groups': self.show_all_groups,
+            'requests' : self.requests,
+            'training_requests' : self.get_training_requests
         }
 
     @property
@@ -78,20 +85,18 @@ class Commands:
     def get_current_cache(self, user_id: int) -> Cache:
         if user_id in self.caches:
             cache = self.caches[user_id]
-
         else:
             cache = self.caches[user_id] = Cache()
-
         return cache
-
-        # ---------- Permission decorators ---------- #
-
+        
+    # ---------- Permission decorators ---------- #
+    
     @staticmethod
     def admin_command(func):
         async def wrapper(self: 'Commands', update: Update, context: ContextTypes.DEFAULT_TYPE):
             sender_id = update.effective_sender.id
-            admin = await Employee.objects.filter(id=sender_id, role=EmployeeRole.ADMIN).afirst()
-            bot_owner = is_bot_owner(sender_id)
+            admin = await Employee.objects.filter(telegram_id=sender_id, role=EmployeeRole.ADMIN).afirst()
+            bot_owner = False #is_bot_owner(sender_id)
 
             if admin or bot_owner:
                 return await func(self, update, context)
@@ -110,6 +115,8 @@ class Commands:
             bot_owner = is_bot_owner(sender_id)
 
             if employee or bot_owner:
+                employee.have_task = False
+                await employee.asave()
                 return await func(self, update, context)
 
             await update.effective_message.reply_text(
@@ -139,8 +146,8 @@ class Commands:
 
         return wrapper
 
-    # ---------- Commands ---------- #
 
+    # ---------- Commands ---------- #
     @telethon_client_required
     @employee_command
     @private_chat_only
@@ -214,6 +221,14 @@ class Commands:
             {
                 'name': 'group_family',
                 'description': 'Add a new family group (main group and sub-groups)'
+            },
+            {
+                'name' : 'show_groups',
+                'description' : 'Show all groups and manage them'
+            },
+            {
+                'name' : 'training_requests',
+                'description' : 'show training requests to responsd'
             }
         ]
 
@@ -281,7 +296,7 @@ class Commands:
         await update.message.reply_text(
             f"Current message: {format_nullable_string(self.db.welcome_message)}\n\n"
             f"You can enter a new message:"
-        )
+        ,reply_markup=self.static_keyoard)
 
     @employee_command
     @private_chat_only
@@ -290,22 +305,21 @@ class Commands:
         cache.current_step = BotStep.SALLA_LINK
         await update.message.reply_text(
             f"Current Salla link: {format_nullable_string(self.db.salla_link)}\n\n"
-            f"You can enter a new link:"
-        )
+            f"You can enter a new link:",reply_markup=self.static_keyoard)
 
     @employee_command
     @private_chat_only
     async def renew_user_subscription(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         cache = self.get_current_cache(update.effective_sender.id)
         cache.current_step = BotStep.RENEW_USER_ID
-        await update.message.reply_text('Enter user\'s Telegram ID to renew subscription:')
+        await update.message.reply_text('Enter user\'s Telegram ID to renew subscription:',reply_markup=self.static_keyoard)
 
     @employee_command
     @private_chat_only
     async def offer_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         cache = self.get_current_cache(update.effective_sender.id)
         cache.current_step = BotStep.OFFER_MESSAGE_CONTENT
-        await update.message.reply_text('Enter message:')
+        await update.message.reply_text('Enter message:',reply_markup=self.static_keyoard)
 
     @employee_command
     @private_chat_only
@@ -358,9 +372,9 @@ class Commands:
     @private_chat_only
     async def group_family(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         cache = self.get_current_cache(update.effective_sender.id)
-        cache.clear()
+        
         cache.current_step = BotStep.GROUP_FAMILY_MAIN_GROUP
-
+        cache.clear()
         keyboard = [
             [
                 KeyboardButton("Select Main Group", request_chat=KeyboardButtonRequestChat(
@@ -373,6 +387,21 @@ class Commands:
 
         reply_markup = ReplyKeyboardMarkup(keyboard)
         await update.message.reply_text('Select main group:', reply_markup=reply_markup)
+
+    @admin_command
+    @private_chat_only
+    async def show_all_groups(self,update: Update, contenxt: ContextTypes.DEFAULT_TYPE):
+        cache = self.get_current_cache(update.effective_user.id)
+        try:
+            # Run the synchronous function in async context
+            groups_rows = [{'title': i.title, 'id': i.telegram_id} async for i in Group.objects.filter(parent=None).all()]
+            keyboard = get_inline_keyboard(groups_rows,label_field='title',value_field='id',items_per_row=2)
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            #cache.current_step = BotStep.VIEW_GROUPS
+            await update.message.reply_text("Select one group to view it's childrens",reply_markup=reply_markup)
+            cache.current_step = BotStep.VIEW_GROUP_PARENT
+        except Exception as e:
+            await update.message.reply_text(f"Sorry, couldn't find that chat on Telegram. {e}",reply_markup=self.static_keyoard)
 
     @employee_command
     @telethon_client_required
@@ -402,6 +431,66 @@ class Commands:
         cache.current_step = BotStep.EDIT_USER_ID
         await update.message.reply_text('Enter user\'s Telegram ID to edit subscription:')
 
+    @employee_command
+    @admin_command
+    @private_chat_only
+    async def requests(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        cache = self.get_current_cache(update.effective_sender.id)
+        cache.current_step = BotStep.CHECK_REQUESTS
+        
+        # Fetch a pending subscription request
+        request = await SubscriptionRequest.objects.filter(status=SubscriptionRequestStatus.PENDING).afirst()
+        
+        if request:
+            # Create the inline keyboard with JSON-encoded callback data
+            keyboard = [
+                [
+                    InlineKeyboardButton(
+                        'Approve',
+                        callback_data=json.dumps({"type": InlineButtonCallbackType.SUBSCRIPTION_REQUEST_APPROVED.value, "id": request.id, "request" : "subscribtion"})
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        'Reject',
+                        callback_data=json.dumps({"type": InlineButtonCallbackType.SUBSCRIPTION_REQUEST_DECLINED.value, "id": request.id,"request" : "subscribtion"})
+                    )
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            # Send the message with the request details and inline keyboard
+            await update.message.reply_text(request.format(separator='\n'), reply_markup=reply_markup)
+        else:
+            await update.message.reply_text("No pending subscription requests found.")
+
+
+    @employee_command
+    @admin_command
+    @private_chat_only
+    async def handle_delete_subgroup(self, update: Update, context: CallbackContext):
+        cache = self.get_current_cache(update.effective_sender.id)
+
+        try:
+            #groups = await self.get_groups()
+            subgroup = cache.group_family_subgroups
+            if subgroup is None:
+                subgroup = cache.group_family_main_group
+
+            if update.message.text == '/yes':
+                await sync_to_async(subgroup.delete)()
+                cache.current_step = BotStep.VIEW_GROUPS
+                cache.clear()
+                await update.effective_message.reply_text('Group deleted successfully.', reply_markup=ReplyKeyboardRemove())
+            else:
+                cache.current_step = BotStep.VIEW_GROUP_PARENT
+                cache.clear()
+                await update.effective_message.reply_text('Process aborted', reply_markup=self.static_keyoard)
+
+        except Exception as e:
+            error_log().append(f"Error in handle_delete_subgroup: {e}")
+            await update.effective_message.reply_text(f"An error occurred: {e}")
+
     # ---------- Status Updates ---------- #
     async def chat_shared(self, update: Update, context: CallbackContext):
         cache = self.get_current_cache(update.effective_sender.id)
@@ -417,11 +506,11 @@ class Commands:
             case BotStep.GROUP_FAMILY_MAIN_GROUP:
                 cache.group_family_main_group, _ = await Group.objects.aget_or_create(
                     telegram_id=shared_chat.chat_id,
-                    defaults=dict(title=shared_chat.title)
-                )
+                    defaults=dict(title=shared_chat.title))
+                #cache.group_family_main_group = await Group.objects.acreate(title=shared_chat.title,telegram_id=shared_chat.chat_id)
                 cache.current_step = BotStep.GROUP_FAMILY_SUBGROUPS
                 cache.group_family_subgroups.clear()
-
+                #group = await Group.objects.filter()
                 keyboard = [
                     [
                         KeyboardButton("Select subgroup", request_chat=KeyboardButtonRequestChat(
@@ -436,43 +525,44 @@ class Commands:
                 await update.message.reply_text('Select subgroups:', reply_markup=reply_markup)
 
             case BotStep.GROUP_FAMILY_SUBGROUPS:
-                subgroup, _ = await Group.objects.aget_or_create(
-                    telegram_id=shared_chat.chat_id,
-                    defaults=dict(title=shared_chat.title)
-                )
+                parent_id = cache.group_family_main_group
+                exist = await Group.objects.filter(telegram_id=shared_chat.chat_id).aexists()
+                if exist:
+                    await update.message.reply_text('this group exists choose another one')
+                else:
+                    subgroup = await Group.objects.acreate(telegram_id=shared_chat.chat_id,title=shared_chat.title,parent=parent_id)
+                    try:
+                        #cache.add_group_family_subgroup(subgroup)
 
-                try:
-                    cache.add_group_family_subgroup(subgroup)
-
-                    keyboard = [
-                        [
-                            InlineKeyboardButton('Finish', callback_data=1)
+                        keyboard = [
+                            [
+                                InlineKeyboardButton('Finish', callback_data=1)
+                            ]
                         ]
-                    ]
 
-                    reply_markup = InlineKeyboardMarkup(keyboard)
+                        reply_markup = InlineKeyboardMarkup(keyboard)
 
-                    message_text = (
-                        f'Subgroup selected. You now have {len(cache.group_family_subgroups)} subgroups selected.\n'
-                        f'You can continue adding more subgroups. Once you\'re done, click "Finish".'
-                    )
-
-                    if cache.subgroup_message:
-                        await cache.subgroup_message.edit_text(message_text, reply_markup=reply_markup)
-
-                    else:
-                        cache.subgroup_message = await update.message.reply_text(
-                            message_text,
-                            reply_markup=reply_markup
+                        message_text = (
+                            f'Subgroup selected. You now have {len(cache.group_family_subgroups)} subgroups selected.\n'
+                            f'You can continue adding more subgroups. Once you\'re done, click "Finish".'
                         )
 
-                except SubgroupAlreadyExists:
-                    await update.message.reply_text('This subgroup already exists. Please select another subgroup.')
+                        #if cache.subgroup_message:
+                        #    await cache.subgroup_message.edit_text(message_text, reply_markup=reply_markup)
 
-                except SubgroupIsMainGroup:
-                    await update.message.reply_text(
-                        'Subgroup is the same as main group. Please select another subgroup.'
-                    )
+                        #else:
+                        cache.subgroup_message = await update.message.reply_text(
+                                message_text,
+                                reply_markup=reply_markup
+                            )
+
+                    except SubgroupAlreadyExists:
+                        await update.message.reply_text('This subgroup already exists. Please select another subgroup.')
+
+                    except SubgroupIsMainGroup:
+                        await update.message.reply_text(
+                            'Subgroup is the same as main group. Please select another subgroup.'
+                        )
 
             case BotStep.INFO_CHAT:
                 async with self.client:
@@ -577,7 +667,7 @@ class Commands:
 
                 else:
                     await update.message.reply_text('All users in this group are subscribed.')
-
+    
     async def user_shared(self, update: Update, context: CallbackContext):
         user = update.message.users_shared.users[0]
         cache = self.get_current_cache(update.effective_sender.id)
@@ -616,13 +706,27 @@ class Commands:
                 keyboard = [
                     [
                         InlineKeyboardButton('Admin', callback_data='admin'),
-                        InlineKeyboardButton('Employee', callback_data='employee')
+                        InlineKeyboardButton('Employee', callback_data='employee'),
+                        InlineKeyboardButton('Tutor', callback_data='tutor')
                     ]
                 ]
 
                 inline_markup = InlineKeyboardMarkup(keyboard)
                 await update.message.reply_text('Select employee role:', reply_markup=inline_markup)
 
+            case BotStep.CHOOSE_TRAINING_COACH:
+                request = cache.training_row
+                request.status = SubscriptionRequestStatus.APPROVED
+                coach_name = user.username
+                exist = await Employee.objects.filter(telegram_id=user.user_id).afirst()
+                if not exist:
+                    exist = await Employee.objects.acreate(telegram_id=user.user_id,telegram_username=user.username,role=EmployeeRole.TUTOR,first_name=user.first_name or '',last_name=user.last_name or '')
+                request.couch_telegram = exist
+                request.message = f'تم الموافقه على طلب التدريب الخاص بك \n بتاريخ {request.session_date} \n الساعة {request.session_time} بتوقيت المملكه العربيه السعوديه \n مع المدرب @{coach_name} وسيتواصل معك في الموعد المحدد'
+                await request.asave()
+                count = await Training.objects.filter(status=SubscriptionRequestStatus.PENDING).acount()
+                await update.effective_message.reply_text(f'/training_requests \n  تم الموافقه على الطلب بنجاح ويوجد {count} طلبات أخرى للمراجعه')
+                    
     async def contact_shared(self, update: Update, context: CallbackContext):
         cache = self.get_current_cache(update.effective_sender.id)
         cache.login_phone_number = update.message.contact.phone_number
@@ -670,10 +774,48 @@ class Commands:
             reply_markup=ReplyKeyboardRemove()
         )
 
+    async def get_groups():
+        return await Group.objects.filter(parent=None)
+    
+    @private_chat_only
+    @employee_command
+    @admin_command
+    async def get_training_requests(self, update: Update, context: CallbackContext):
+        request = await Training.objects.filter(status=SubscriptionRequestStatus.PENDING).afirst()
+        cache = self.get_current_cache(update.effective_sender.id)
+        cache.current_step = BotStep.TRAINING_REQUESTS
+        if request:
+            # Create the inline keyboard with JSON-encoded callback data
+            keyboard = [
+                [
+                    InlineKeyboardButton(
+                        'Approve',
+                        callback_data=json.dumps({"type": InlineButtonCallbackType.SUBSCRIPTION_REQUEST_APPROVED.value, "id": request.id, "request" : "training"})
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        'Reject',
+                        callback_data=json.dumps({"type": InlineButtonCallbackType.SUBSCRIPTION_REQUEST_DECLINED.value, "id": request.id,"request" : "training"})
+                    )
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            # Send the message with the request details and inline keyboard
+            await update.message.reply_text(request.format(separator='\n'), reply_markup=reply_markup)
+        else:
+            await update.message.reply_text("No pending subscription requests found.")
+    
     @private_chat_only
     async def message_received(self, update: Update, context: CallbackContext):
-        cache = self.get_current_cache(update.effective_sender.id)
-
+        try:
+            cache = self.get_current_cache(update.effective_sender.id)
+            if update.message.text == 'exit':
+                cache.current_step = BotStep.IDLE
+        except Exception as e:
+            error_log().append(e)
+            
         match cache.current_step:
             case BotStep.NEW_USER_INVOICE_NUMBER:
                 cache.invoice_number = update.message.text
@@ -692,7 +834,7 @@ class Commands:
                 async with self.client:
                     await self._add_user_subscription(update, context)
                     await update.message.reply_text("User added successfully!")
-
+                    await cache.clear()
             case BotStep.WELCOME_MESSAGE:
                 self.db.welcome_message = update.message.text
                 self.db.save()
@@ -757,7 +899,8 @@ class Commands:
                 await existing_subscription.renew(
                     invoice_number=invoice_number,
                     end_date=cache.renew_end_date,
-                    payment_method=cache.payment_method
+                    payment_method=cache.payment_method,
+                    renewed = True
                 )
 
                 await update.effective_message.reply_text(
@@ -829,6 +972,8 @@ class Commands:
                 await request.arefresh_from_db()
                 request.end_date = end_date
                 await request.mark_as_approved()
+                await request.mark_as_reported()
+                await request.asave()
                 user = await User.objects.filter(telegram_id=request.user_telegram_id).afirst()
 
                 if user:
@@ -917,6 +1062,32 @@ class Commands:
                     await update.message.reply_text("End date updated successfully!")
                     cache.current_step = BotStep.EDIT_SUBSCRIPTION_FIELDS
 
+            case BotStep.DELETE_GROUP:
+                await self.handle_delete_subgroup(update,context)
+
+            case BotStep.REJECT_SUBSCRIBTION:
+                message = update.message.text
+                request_row = cache.reject_user_id
+                print('request_row 1: ',request_row,'*'*8)
+                if request_row:
+                    await request_row.arefresh_from_db()
+                    print(request_row)
+                    request_row.message = message
+                    await request_row.mark_as_declined()
+                    await request_row.mark_as_reported()
+                    await request_row.asave()
+                    await update.message.reply_text("Request rejected successfully.")
+                else:
+                    await update.message.reply_text("هناك خطأ في البيانات")
+
+            case BotStep.REJECT_TRAINING:
+                request = cache.training_row
+                request.message = update.message.text
+                request.status = SubscriptionRequestStatus.DECLINED
+                await request.asave()
+                count = await Training.objects.filter(status=SubscriptionRequestStatus.PENDING).acount()
+                await update.effective_message.reply_text(f'/training_requests \n تم رفض الطلب ويوجد {count} طلبات أخرى للمراجعه')
+            
     async def _add_user_subscription(self, update: Update, context: CallbackContext):
         cache = self.get_current_cache(update.effective_sender.id)
         user_entity = await self.client.get_entity(cache.shared_user.user_id)
@@ -1070,24 +1241,31 @@ class Commands:
         await query.answer()
 
         data = query.data
-
+        print(data,InlineButtonCallbackType.SUBSCRIPTION_REQUEST_APPROVED,'*'*10)
         try:
             data = json.loads(data)
-
+            if isinstance(data,int):
+                request_for = None
+            else:
+                request_for = data.get('request')
         except json.JSONDecodeError as error:
             print(error, flush=True)
+            request_for = None
 
-        if isinstance(data, dict):
-            event_type = InlineButtonCallbackType(data.get('type'))
+        #print(request_for,' * '*8)
+        if isinstance(data, dict) and request_for == 'subscribtion':
+            print('got the subscribtion request response')
+            event_type = data.get('type')
 
             match event_type:
-                case InlineButtonCallbackType.SUBSCRIPTION_REQUEST_APPROVED:
+                case InlineButtonCallbackType.SUBSCRIPTION_REQUEST_APPROVED.value :
                     request: SubscriptionRequest | None = await SubscriptionRequest.objects.filter(
                         id=data.get('id')
                     ).afirst()
 
                     if request:
                         if request.is_resolved:
+                            await query.edit_message_reply_markup(None)
                             await update.effective_message.reply_text('Request is already resolved.')
 
                         else:
@@ -1095,33 +1273,74 @@ class Commands:
                             cache.approved_subscription_request = request
                             await query.edit_message_reply_markup(None)
                             await update.effective_message.reply_text("Enter subscription end date (dd/mm/yyyy):")
-
                     else:
                         await update.effective_message.reply_text('Request not found')
+                        await query.edit_message_reply_markup(None)
 
-                case InlineButtonCallbackType.SUBSCRIPTION_REQUEST_DECLINED:
+                case InlineButtonCallbackType.SUBSCRIPTION_REQUEST_DECLINED.value:
                     request: SubscriptionRequest | None = await SubscriptionRequest.objects.filter(
+                        id=data.get('id')
+                    ).afirst()
+                    print('request 1: ',request,'*'*8)
+                    if request:
+                        if request.is_resolved:
+                            await update.effective_message.reply_text('Request is already resolved.')
+                            await query.edit_message_reply_markup(None)
+                        else:
+                            cache = self.get_current_cache(update.effective_sender.id)
+                            await query.edit_message_reply_markup(None)
+                            cache.reject_user_id = request
+                            cache.current_step = BotStep.REJECT_SUBSCRIBTION
+                            await update.effective_message.reply_text('أكتب سبب الرفض من فضلك: ')
+                    else:
+                        await update.effective_message.reply_text('Request not found')
+                        await query.edit_message_reply_markup(None)
+
+            return
+
+        if isinstance(data,dict) and request_for == 'training':
+            print('got the training request response')
+            event_type = data.get('type')
+
+            match event_type:
+                case InlineButtonCallbackType.SUBSCRIPTION_REQUEST_APPROVED.value :
+                    request: Training | None = await Training.objects.filter(
                         id=data.get('id')
                     ).afirst()
 
                     if request:
-                        if request.is_resolved:
+                        if request.status != SubscriptionRequestStatus.PENDING:
                             await update.effective_message.reply_text('Request is already resolved.')
-
                         else:
-                            await request.mark_as_declined()
-                            await query.edit_message_text("Request declined successfully.")
+                            cache.training_row = request
+                            cache.current_step = BotStep.CHOOSE_TRAINING_COACH
+                            reply_markup = get_request_user_reply_markup()
+                            await update.effective_message.reply_text('برجاء تحديد المدرب أو المسئول عن تقديم التدريب',reply_markup=reply_markup)
+                    else:
+                        await update.effective_message.reply_text('Request not found')
 
+                case InlineButtonCallbackType.SUBSCRIPTION_REQUEST_DECLINED.value:
+                    request: Training | None = await Training.objects.filter(
+                        id=data.get('id')
+                    ).afirst()
+                    
+                    if request:
+                        if request.status != SubscriptionRequestStatus.PENDING:
+                            await update.effective_message.reply_text('Request is already resolved.')
+                        else:
+                            cache = self.get_current_cache(update.effective_sender.id)
+                            cache.training_row = request
+                            cache.current_step = BotStep.REJECT_TRAINING
+                            await update.effective_message.reply_text('أكتب سبب الرفض من فضلك وسيتم إرساله للعميل: ')
                     else:
                         await update.effective_message.reply_text('Request not found')
 
             return
-
+        
         match cache.current_step:
             case BotStep.NEW_USER_PAYMENT_METHOD:
                 try:
                     payment_method = cache.payment_method = PaymentMethod(data)
-
                 except ValueError:
                     await update.message.reply_text('Invalid payment method. Try again.')
                     return
@@ -1191,7 +1410,7 @@ class Commands:
                 await query.delete_message()
 
                 group_family = await GroupFamily.objects.acreate(
-                    main_group=cache.group_family_main_group
+                    main_group = cache.group_family_main_group
                 )
                 await group_family.subgroups.aset(cache.group_family_subgroups)
 
@@ -1202,6 +1421,61 @@ class Commands:
                 )
 
                 await update.effective_message.reply_markdown_v2(message, reply_markup=ReplyKeyboardRemove())
+
+            #added in V 2.0
+            case BotStep.DELETE_GROUP:
+                if data == 'yes_delete':
+                    await update.effective_message.reply_text( text=f'Deleting group: {cache.group_family_main_group.title} \n\n /show_groups')
+                    await sync_to_async(cache.group_family_main_group.delete)()
+                    await cache.clear()
+                else:
+                    await update.effective_message.reply_text( text=f'Closed the process of deleting group {cache.group_family_main_group.title} \n\n /show_groups')
+                    await cache.clear()
+
+            case BotStep.VIEW_GROUP_PARENT:
+                print('got it '*8,data)
+                await query.delete_message()
+                groups_childrens = [{'title':i.title,'id':i.telegram_id} async for i in Group.objects.filter(parent_id=data).all()]
+                groups_childrens.append({'title':'add new children','id':-1})
+                groups_childrens.append({'title':'delete group','id':0})
+                keyboard = get_inline_keyboard(groups_childrens,label_field='title',value_field='id',items_per_row=2)
+                keyboard = InlineKeyboardMarkup(keyboard)
+                cache = self.get_current_cache(update.effective_sender.id)
+                cache.group_family_main_group = await Group.objects.aget(telegram_id=data)
+                cache.current_step = BotStep.VIEW_GROUPS
+                await update.effective_message.reply_text(
+                    text='Select children group or add new:',
+                    reply_markup=keyboard)
+                
+            case BotStep.VIEW_GROUPS:
+                await query.delete_message()
+                cache = self.get_current_cache(update.effective_sender.id)
+                if data == 0:
+                    cache.current_step = BotStep.DELETE_GROUP
+                    keyboard = get_inline_keyboard([{'title':'yes','data':'yes_delete'},{'title':'no exit','data':'no_forget'}],label_field='title',value_field='data',items_per_row=2)
+                    await update.effective_message.reply_text(f'are you sure to delete {cache.group_family_main_group.title}?',reply_markup=InlineKeyboardMarkup(keyboard))
+
+                elif data ==  -1:
+                    cache.current_step = BotStep.GROUP_FAMILY_SUBGROUPS
+                    keyboard = [
+                        [
+                            KeyboardButton("Select subgroup", request_chat=KeyboardButtonRequestChat(
+                                request_id=1,
+                                chat_is_channel=False,
+                                request_title=True
+                            ))
+                        ]
+                    ]
+
+                    reply_markup = ReplyKeyboardMarkup(keyboard)
+                    await update.effective_message.reply_text('Select subgroups:', reply_markup=reply_markup)
+                else:
+                    cache.current_step = BotStep.DELETE_GROUP
+                    cache.group_family_subgroups = await Group.objects.aget(telegram_id=data)
+                    #print(cache.group_family_subgroups)
+                    await update.effective_message.reply_text('Want to delete subgroup? /yes or /no')
+                
+            #end of V 2.0
 
             case BotStep.TWO_FACTOR_AUTH_PASSWORD:
                 await query.edit_message_text(f'2FA password skipped.')

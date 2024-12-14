@@ -7,7 +7,7 @@ from pendulum import DateTime
 from src.admin_bot import settings as admin_settings
 from src.common import pendulum
 from src.common.exceptions import EmployeeAlreadyExists
-from src.common.models import User, OfferMessage, Employee, SenderEntity, GroupFamily, SubscriptionRequest
+from src.common.models import User, OfferMessage, Employee, SenderEntity, GroupFamily, SubscriptionRequest,training
 from src.common.utils import get_path
 
 
@@ -25,7 +25,8 @@ class Database:
         'employees': Employee,
         'sender_entities': SenderEntity,
         'group_families': GroupFamily,
-        'subscription_requests': SubscriptionRequest
+        'subscription_requests': SubscriptionRequest,
+        'training': training
     }
 
     def start(self):

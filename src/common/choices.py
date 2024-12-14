@@ -4,7 +4,7 @@ from django.db import models
 class PaymentMethod(models.TextChoices):
     SALLA = 'salla', 'سلة'
     STC = 'stc', 'STC'
-    TRIAL = 'trial', 'تجربة'
+    TRIAL = 'trial', 'تجربة مجانيه'
     OTHER = 'other', 'أخرى'
 
 

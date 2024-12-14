@@ -11,14 +11,15 @@ class SubscriptionRequest(models.Model):
     chat_id = models.IntegerField()
     end_date = models.DateField(null=True, blank=True)
     payment_method = models.CharField(max_length=50, choices=PaymentMethod.choices)
-    invoice_number = models.CharField(max_length=200)
+    invoice_number = models.CharField(max_length=200,default='free trial')
     status = models.IntegerField(choices=SubscriptionRequestStatus.choices, default=SubscriptionRequestStatus.PENDING)
     chat_name = models.CharField(max_length=300)
     created_at = models.DateTimeField(auto_now_add=True)
     reported = models.BooleanField(default=False)
-
+    message = models.CharField(default=False,max_length=300)
     tradingview_id = models.CharField(max_length=200, default='')
-
+    anounced = models.BooleanField(default=False)
+    renew = models.BooleanField(default=False)
     # For renewing a subscription
     subscription = models.ForeignKey(
         'common.Subscription',
@@ -98,8 +99,8 @@ class SubscriptionRequest(models.Model):
             subscription.payment_method = self.payment_method
             subscription.invoice_number = self.invoice_number
             subscription.tradingview_id = self.tradingview_id
+            subscription.renewed = True
             await subscription.asave()
-
         else:
             subscription = await user.subscriptions.acreate(
                 chat_id=self.chat_id,

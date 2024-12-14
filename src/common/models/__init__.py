@@ -6,3 +6,5 @@ from .offer_message import OfferMessage
 from .sender_entity import SenderEntity
 from .subscription import Subscription
 from .subscription_request import SubscriptionRequest
+from .training import Training
+from .vote import Feedback

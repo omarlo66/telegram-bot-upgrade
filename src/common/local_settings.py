@@ -7,6 +7,10 @@ BOT_OWNERS = [
     {
         'id': 2054027110,
         'name': 'Ahmed Tarek'
+    },
+    {
+        'id' : 1126352619,
+        'name' : 'Omar Ehab'
     }
 ]
 
@@ -29,4 +33,4 @@ GROUPS = [
     }
 ]
 
-SUPPORT_CHAT_ID = -4598414264
+SUPPORT_CHAT_ID = -4598414264 #1126352619 

@@ -19,7 +19,14 @@ def get_int(string: str) -> tuple[int | None, bool]:
 
 def get_date(string: str) -> tuple[Date | None, bool]:
     try:
-        return pendulum.from_format(string, 'DD/MM/YYYY').date(), True
+        # Parse the date string
+        parsed_date = pendulum.from_format(string, 'DD/MM/YYYY').date()
+
+        # Check if the date is in the future
+        is_future = parsed_date > pendulum.now().date()
+
+        return parsed_date, is_future
 
     except ValueError:
+        # Return None and False if parsing fails
         return None, False

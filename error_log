@@ -1,0 +1,127 @@
+requests is pending: SubscriptionRequest object (80)	2024-12-10 11:30:19.711984
+Generating user link	2024-12-10 11:30:19.768105
+Error generating invite link for main group -1001303623202. | Details: {'error': 'Chat not found', 'group_id': -1001303623202}	2024-12-10 11:30:19.912211
+No invite links generated for the request.	2024-12-10 11:30:19.935217
+requests is pending: SubscriptionRequest object (81)	2024-12-10 11:30:39.740825
+Generating user link	2024-12-10 11:30:39.793251
+Error generating invite link for main group -1002241858020. | Details: {'error': 'Chat not found', 'group_id': -1002241858020}	2024-12-10 11:30:39.979886
+No invite links generated for the request.	2024-12-10 11:30:40.001869
+requests is pending: SubscriptionRequest object (83)	2024-12-10 11:33:49.712169
+Generating user link	2024-12-10 11:33:49.763880
+Error generating invite link for main group -1001587333839. | Details: {'error': 'Chat not found', 'group_id': -1001587333839}	2024-12-10 11:33:50.137254
+No invite links generated for the request.	2024-12-10 11:33:50.162259
+'Group' object is not subscriptable	2024-12-10 12:35:34.100147
+sending mmessage to:Omarehabm	2024-12-10 12:37:40.302173
+sending mmessage to:Omarehabm	2024-12-10 12:37:50.440963
+admins_and_employees: [<Employee: Employee object (1)>, <Employee: Employee object (2)>]	2024-12-10 12:41:03.453629
+sending mmessage to:Omarehabm	2024-12-10 12:41:03.871816
+admins_and_employees: [<Employee: Employee object (1)>, <Employee: Employee object (2)>]	2024-12-10 12:41:13.513593
+sending mmessage to:Omarehabm	2024-12-10 12:41:13.907131
+admins_and_employees: [<Employee: Employee object (1)>, <Employee: Employee object (2)>]	2024-12-10 12:42:53.665195
+admins_and_employees: [<Employee: Employee object (1)>, <Employee: Employee object (2)>]	2024-12-10 12:42:53.718725
+sending mmessage to:Omarehabm	2024-12-10 12:42:54.061886
+sending mmessage to:Omarehabm	2024-12-10 12:42:54.123794
+admins_and_employees: ['Omarehabm', 'HagerRaslan']	2024-12-10 12:44:05.012544
+sending mmessage to:Omarehabm	2024-12-10 12:44:05.334739
+admins_and_employees: ['Omarehabm', 'HagerRaslan']	2024-12-10 12:44:15.025393
+sending mmessage to:Omarehabm	2024-12-10 12:44:15.356405
+sending mmessage to:Omarehabm	2024-12-10 12:45:48.246818
+sending mmessage to:Omarehabm	2024-12-10 12:45:58.366823
+sending mmessage to:Omarehabm	2024-12-10 14:06:06.756070
+sending mmessage to:Omarehabm	2024-12-10 14:06:06.809084
+sending mmessage to:HagerRaslan	2024-12-10 14:06:06.873738
+sending mmessage to:HagerRaslan	2024-12-10 14:06:06.985949
+sending mmessage to:Omarehabm	2024-12-10 14:06:16.816291
+sending mmessage to:HagerRaslan	2024-12-10 14:06:16.990864
+sending mmessage to:Omarehabm	2024-12-10 14:06:26.824239
+sending mmessage to:HagerRaslan	2024-12-10 14:06:26.937012
+sending mmessage to:Omarehabm	2024-12-10 14:06:36.785783
+sending mmessage to:HagerRaslan	2024-12-10 14:06:36.959590
+sending mmessage to:Omarehabm	2024-12-10 14:06:46.788987
+sending mmessage to:HagerRaslan	2024-12-10 14:06:46.908023
+sending mmessage to:Omarehabm	2024-12-10 14:06:56.868813
+sending mmessage to:HagerRaslan	2024-12-10 14:06:57.062784
+sending mmessage to:Omarehabm	2024-12-10 14:07:06.860046
+sending mmessage to:HagerRaslan	2024-12-10 14:07:07.065235
+sending mmessage to:Omarehabm	2024-12-10 14:07:16.796477
+sending mmessage to:HagerRaslan	2024-12-10 14:07:16.914504
+sending mmessage to:Omarehabm	2024-12-10 14:07:26.833200
+sending mmessage to:HagerRaslan	2024-12-10 14:07:26.947412
+sending mmessage to:Omarehabm	2024-12-10 14:07:36.763167
+sending mmessage to:HagerRaslan	2024-12-10 14:07:36.882081
+sending mmessage to:Omarehabm	2024-12-10 14:07:46.897563
+sending mmessage to:HagerRaslan	2024-12-10 14:07:47.102567
+sending mmessage to:Omarehabm	2024-12-10 14:07:56.831047
+sending mmessage to:HagerRaslan	2024-12-10 14:07:56.968082
+sending mmessage to:Omarehabm	2024-12-10 14:08:06.764147
+sending mmessage to:HagerRaslan	2024-12-10 14:08:06.886355
+sending mmessage to:Omarehabm	2024-12-10 14:08:16.595221
+sending mmessage to:HagerRaslan	2024-12-10 14:08:16.715302
+sending mmessage to:Omarehabm	2024-12-10 14:08:26.627222
+sending mmessage to:HagerRaslan	2024-12-10 14:08:26.751279
+sending mmessage to:Omarehabm	2024-12-10 14:08:36.766276
+sending mmessage to:HagerRaslan	2024-12-10 14:08:36.881851
+sending mmessage to:Omarehabm	2024-12-10 14:08:46.802284
+sending mmessage to:HagerRaslan	2024-12-10 14:08:46.927314
+sending mmessage to:Omarehabm	2024-12-10 14:08:56.860837
+sending mmessage to:HagerRaslan	2024-12-10 14:08:57.038987
+sending mmessage to:Omarehabm	2024-12-10 14:09:06.772565
+sending mmessage to:HagerRaslan	2024-12-10 14:09:06.904908
+sending mmessage to:Omarehabm	2024-12-10 14:09:16.597832
+sending mmessage to:HagerRaslan	2024-12-10 14:09:16.730090
+sending mmessage to:Omarehabm	2024-12-10 14:09:26.850795
+sending mmessage to:HagerRaslan	2024-12-10 14:09:26.985828
+sending mmessage to:Omarehabm	2024-12-10 14:09:36.670443
+sending mmessage to:HagerRaslan	2024-12-10 14:09:36.904599
+sending mmessage to:Omarehabm	2024-12-10 14:09:46.717591
+sending mmessage to:HagerRaslan	2024-12-10 14:09:46.909885
+sending mmessage to:Omarehabm	2024-12-10 14:10:08.720574
+sending mmessage to:HagerRaslan	2024-12-10 14:10:08.846829
+sending mmessage to:Omarehabm	2024-12-10 14:28:18.880184
+sending mmessage to:Omarehabm	2024-12-10 14:28:18.977208
+sending mmessage to:HagerRaslan	2024-12-10 14:28:19.048065
+sending mmessage to:HagerRaslan	2024-12-10 14:28:19.105082
+requests is pending: SubscriptionRequest object (89)	2024-12-10 14:28:33.497686
+sending mmessage to:Omarehabm	2024-12-10 14:28:58.789136
+sending mmessage to:Omarehabm	2024-12-10 14:28:58.921692
+sending mmessage to:HagerRaslan	2024-12-10 14:28:58.962257
+sending mmessage to:HagerRaslan	2024-12-10 14:28:59.119832
+requests is pending: SubscriptionRequest object (90)	2024-12-10 14:29:23.495667
+Generating user link	2024-12-10 14:29:23.589347
+Error generating invite link for main group -1002241858020. | Details: {'error': 'Chat not found', 'group_id': -1002241858020}	2024-12-10 14:29:23.987336
+No invite links generated for the request.	2024-12-10 14:29:24.027345
+sending mmessage to:Omarehabm	2024-12-10 14:31:18.877159
+sending mmessage to:Omarehabm	2024-12-10 14:31:19.005308
+sending mmessage to:HagerRaslan	2024-12-10 14:31:19.086102
+sending mmessage to:HagerRaslan	2024-12-10 14:31:19.274417
+requests is pending: SubscriptionRequest object (91)	2024-12-10 14:31:43.506693
+sending mmessage to:Omarehabm	2024-12-10 14:32:08.832177
+sending mmessage to:HagerRaslan	2024-12-10 14:32:08.949800
+sending mmessage to:Omarehabm	2024-12-10 14:32:48.904635
+sending mmessage to:Omarehabm	2024-12-10 14:32:49.001456
+sending mmessage to:HagerRaslan	2024-12-10 14:32:49.071534
+sending mmessage to:HagerRaslan	2024-12-10 14:32:49.275029
+sending mmessage to:Omarehabm	2024-12-10 14:34:08.851969
+sending mmessage to:HagerRaslan	2024-12-10 14:34:09.043053
+sending mmessage to:Omarehabm	2024-12-10 14:34:18.609760
+sending mmessage to:HagerRaslan	2024-12-10 14:34:18.874420
+sending mmessage to:Omarehabm	2024-12-10 14:34:58.913038
+sending mmessage to:Omarehabm	2024-12-10 14:34:58.954443
+sending mmessage to:HagerRaslan	2024-12-10 14:34:59.225472
+sending mmessage to:HagerRaslan	2024-12-10 14:34:59.290743
+sending mmessage to:Omarehabm	2024-12-10 16:26:38.943818
+sending mmessage to:HagerRaslan	2024-12-10 16:26:39.187178
+sending mmessage to:Omarehabm	2024-12-10 16:26:48.966136
+sending mmessage to:HagerRaslan	2024-12-10 16:26:49.211316
+requests is pending: SubscriptionRequest object (92)	2024-12-10 16:27:03.517526
+Generating user link	2024-12-10 16:27:03.651316
+Error generating invite link for main group -4558709580. | Details: {'error': 'Chat not found', 'group_id': -4558709580}	2024-12-10 16:27:04.018372
+No invite links generated for the request.	2024-12-10 16:27:04.071910
+httpx.ConnectError: [Errno 11001] getaddrinfo failed	2024-12-10 22:01:32.430027
+httpx.ConnectError: [Errno 11001] getaddrinfo failed	2024-12-10 22:01:34.081861
+httpx.ConnectError: [Errno 11001] getaddrinfo failed	2024-12-10 22:01:35.603490
+httpx.ConnectError: [Errno 11001] getaddrinfo failed	2024-12-10 22:01:37.858794
+httpx.ConnectError: [Errno 11001] getaddrinfo failed	2024-12-10 22:01:41.195040
+httpx.ConnectError: [Errno 11001] getaddrinfo failed	2024-12-10 22:01:46.306072
+httpx.ConnectError: [Errno 11001] getaddrinfo failed	2024-12-10 22:01:53.907267
+httpx.ConnectError: [Errno 11001] getaddrinfo failed	2024-12-11 11:58:53.448956

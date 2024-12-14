@@ -6,6 +6,7 @@ from src.client_bot.enums import BotStep
 from src.client_bot.interfaces import SupportResponse
 from src.common.choices import PaymentMethod
 
+from src.common.models import Feedback
 
 class Cache(SimpleNamespace):
     chat_id: int | None = None
@@ -19,3 +20,14 @@ class Cache(SimpleNamespace):
     renew_payment_method: PaymentMethod | None = None
 
     support_response: SupportResponse | None = None
+
+    training_date: Date | None = None
+    training_time: str | None = None
+
+    free_trial: bool | None = False
+
+    feedback: Feedback | None = None
+
+    def clear(self):
+        self.free_trial = False
+        self.feedback = None

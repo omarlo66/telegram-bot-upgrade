@@ -5,10 +5,27 @@ from telegram.error import ChatMigrated
 from telegram.ext import ContextTypes
 from telethon.tl.types import ChannelParticipantCreator, ChannelParticipantAdmin
 
+from datetime import datetime
+
 from src.common import settings, pendulum
 from src.common.models import User
 
+class error_log:
+    def __init__(self):
+        self.error_log_file = 'error_log'
+        self.type = ''
+        try:
+            open(self.error_log_file,'r').read()
+            self.type = 'a'
+        except:
+            self.type = 'w'
+    def append(self,error):
+        open(self.error_log_file,self.type).write(f'{error}\t{datetime.now()}\n')
 
+    def show_all(self):
+        return open(self.error_log_file,'r').read()
+    
+    
 def get_request_user_reply_markup():
     keyboard = [
         [

@@ -43,6 +43,9 @@ class BotStep:
     # /group_family
     GROUP_FAMILY_MAIN_GROUP = 50
     GROUP_FAMILY_SUBGROUPS = 51
+    VIEW_GROUPS = 52
+    VIEW_GROUP_PARENT = 53
+    DELETE_GROUP = 54
 
     # /cleanup_group
     SELECT_CLEANUP_GROUP = 60
@@ -50,6 +53,7 @@ class BotStep:
 
     # Client bot events
     APPROVED_SUBSCRIPTION_END_DATE = 70
+    REJECT_SUBSCRIBTION = 71
 
     # /edit
     EDIT_USER_ID = 80
@@ -60,6 +64,11 @@ class BotStep:
     EDIT_TRADINGVIEW_ID = 85
     EDIT_SUBSCRIPTION_FIELDS = 86
 
+    # / requests 
+    CHECK_REQUESTS = 90
+    TRAINING_REQUESTS = 91
+    REJECT_TRAINING = 92
+    CHOOSE_TRAINING_COACH = 93
 
 class InlineButtonCallbackType(enum.Enum):
     # SubscriptionRequest
