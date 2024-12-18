@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import timedelta, datetime,time
 from django.db.models.functions import TruncHour,TruncDate,ExtractHour
 from django.db.models import Q,Count
@@ -12,7 +13,6 @@ from src.common import settings
 from src.common.choices import SubscriptionRequestStatus
 from src.common.models import Subscription, Feedback, Group, Training, subscription
 from src.common.utils import get_credentials
-
 from .forms import LoginForm
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
@@ -66,35 +66,56 @@ def set_cookie(response, key, value, days_expire=7):
 
 
 class SubscriberActivityView(TemplateView):
-    template_name = "subscriber-activity.html"
+    template_name = "dashboard.html"
 
 class Dashboard_v2(TemplateView):
     template_name = "dashboard.html"
 
 class SubscriberActivityAPIView2(APIView):
-    def get(self, request, format=None,from_date=None,to_date=None,groups=''):
+    def get(self, request, format=None,from_date=None,to_date=None):
         token = request.COOKIES.get('auth')
+
+        from_date = request.query_params.get('from_date', None)
+        to_date = request.query_params.get('to_date', None)
+        
         if token != get_credentials('token_auth'):
             return Response(False,status=status.HTTP_401_UNAUTHORIZED)
-        
+
         if from_date != None and to_date != None:
-            from_date = datetime.strptime(from_date, "%d-%m-%Y")
-            to_date = datetime.strptime(to_date, "%d-%m-%Y")
+            from_date = datetime.strptime(from_date, "%Y-%m-%d")
+            to_date = datetime.strptime(to_date, "%Y-%m-%d")
             subscriptions = Subscription.objects.filter(created_at__range=(from_date, to_date))
         else:
             subscriptions = Subscription.objects.all()
+            to_date = datetime.now().date()
+            year = to_date.year
+            month = to_date.month - 1
 
+            if month == 0:  # Handle January case
+                month = 12
+                year -= 1
+
+            from_date = to_date.replace(year=year, month=month)
+
+        one_month_ago = from_date
+        next_month = to_date
         if not subscriptions.exists():
             print("No subscriptions found.")
-            return Response({"error": "No subscriptions available"}, status=status.HTTP_404_NOT_FOUND)
-
-        if from_date != None and to_date != None:
-            subscriptions = Subscription.objects.filter(created_at__range=(from_date, to_date))
-        else:
-            subscriptions = Subscription.objects.all()
+            return Response({"error": "No subscriptions available"}, status=status.HTTP_204_NO_CONTENT)
         
+        subscriptions_by_date = defaultdict(int)
+
+        # Loop through the subscriptions and count the number per date
+        for subscription in subscriptions:
+            subscription_date = subscription.created_at.date()  # Extract the date part
+            subscriptions_by_date[subscription_date] += 1
+
+        # Find the top day with the maximum subscriptions
+        top_day_subscriptions_date = max(subscriptions_by_date, key=subscriptions_by_date.get)
+        top_day_subscriptions = subscriptions_by_date[top_day_subscriptions_date]
+
         subscription_count = subscriptions.count()
-        joined_within_a_month = subscriptions.filter(created_at__date=(one_month_ago, next_month)).count()
+        joined_within_a_month = subscriptions.filter(created_at__range=(one_month_ago, next_month)).count()
         joined_within_a_month_percentage = round((joined_within_a_month / (subscription_count or 1)) * 100, 2)
         leaving_within_a_month = subscriptions.filter(end_date__lte=next_month).count()
         leaving_within_a_month_percentage = round((leaving_within_a_month / (subscription_count or 1)) * 100, 2)
@@ -110,37 +131,46 @@ class SubscriberActivityAPIView2(APIView):
             "leaving_within_a_month": leaving_within_a_month,
             "leaving_within_a_month_percentage": leaving_within_a_month_percentage,
             "monthly_growth_percentage": monthly_growth_percentage,
+            "most_joins_in_a_day": top_day_subscriptions,
+            "most_joins_in_a_day_date": top_day_subscriptions_date,
             "reviews":self.reviews(from_date,to_date),
             "groups":self.groups(),
             "training":self.training(from_date,to_date),
-            "chart_1": self.chart_1_data(from_date,to_date,Group.objects.all()),
-            "chart_2": self.chart_2_data(from_date,to_date,Group.objects.all()),
             "total_renewed":self.total_renewed(from_date,to_date),
             "total_lefted":self.total_lefted(from_date,to_date),
-            "total_subscribers":self.total_subscribers(from_date,to_date),
-
+            "total_subscribers": self.total_subscribers(from_date,to_date),
+            'subscriber_by_date': self.get_subscription_data(subscriptions),
+            'parameters': [from_date,to_date]
         },status=status.HTTP_200_OK)
+        
 
+    def get_subscription_data(self, subscriptions):
+        grouped_data = subscriptions.values(
+        'created_at__date',
+        'chat_name'
+        ).annotate(
+            count=Count('id')
+        ).order_by('created_at__date', 'chat_name')
 
-    def chart_1_data(self,start_date,end_date,groups):
-        if start_date == None and end_date == None:
-            chart_labels = []
-            chart_data = []
-            for group in groups:
-                active_subscriptions = Subscription.objects.filter(is_active=True).filter(group=group).count()
-                chart_labels.append(group)
-                chart_data.append(active_subscriptions)
-            return chart_labels,chart_data
-        else:
-            chart_labels = []
-            chart_data = []
-            for group in groups:
-                active_subscriptions = Subscription.objects.filter(is_active=True).filter(group=group).count()
-                chart_labels.append(group)
-                chart_data.append(active_subscriptions)
-            return chart_labels,chart_data
+        # Group data by date and create a list of dictionaries
+        result = []
+        current_date = None
+        current_group = None
+        for item in grouped_data:
+            date = item['created_at__date'].strftime('%Y-%m-%d')
+            chat_name = item['chat_name']
+            count = item['count']
 
-    def chart_2_data(self,start_date,end_date,groups):
+            if date != current_date:
+                current_date = date
+                current_group = {'created_at': date, 'data': []}
+                result.append(current_group)
+
+            current_group['data'].append({'label': chat_name, 'value': count})
+
+        return result
+    
+    def chart_2_data(self,start_date,end_date):
         reviews_dict = {
             0: 'لا تعليق',
             1: 'ضعيف',
@@ -156,8 +186,8 @@ class SubscriberActivityAPIView2(APIView):
             for review in reviews:
                 chart_labels.append(review['review'])
                 chart_data.append(reviews_dict[review['review']])
-
             return chart_labels,chart_data
+        
     def total_renewed(self,start_date,end_date):
         if start_date == None and end_date == None:
             return Subscription.objects.filter(renewed=True).count()
@@ -184,7 +214,7 @@ class SubscriberActivityAPIView2(APIView):
         return reviews
 
     def groups(self):
-        groups = [{'title':i.title,'id':i.telegram_id,'subscribers':Subscription.objects.filter(chat_name=i.title).count(),'lefted':Subscription.objects.filter(is_active=False).count(),'renew':Subscription.objects.filter(renewed=True).count()} for i in Group.objects.all()]
+        groups = [{'title':i.title,'id':i.telegram_id,'subscribers':Subscription.objects.filter(chat_name=i.title,is_active=True).count(),'lefted':Subscription.objects.filter(chat_name=i.title,is_active=False).count(),'renew':Subscription.objects.filter(chat_name=i.title,renewed=True).count()} for i in Group.objects.all()]
         return groups
 
     def top_users(self,from_date,to_date):
@@ -194,12 +224,36 @@ class SubscriberActivityAPIView2(APIView):
             top_users = [{'user':i.user_id,'subscribers':Subscription.objects.filter(user_id=i.user_id).count()} for i in Subscription.objects.filter(created_at__date__range=(from_date,to_date))]
         return top_users
 
-    def training(self,from_date,to_date):
-        if from_date == None and to_date == None:
-            training = [{"couch":i.couch_telegram.telegram_username if i.couch_telegram != None else "","date":i.session_date,"time":i.session_time,"status":SubscriptionRequestStatus(i.status).name,"created_at":i.created_at} for i in Training.objects.all()]
-        else:
-            training = [{"couch":i.couch_telegram.telegram_username if i.couch_telegram != None else "","date":i.session_date,"time":i.session_time,"status":SubscriptionRequestStatus(i.status).name,"created_at":i.created_at} for i in Training.objects.filter(created_at__date__range=(from_date,to_date))]
-        return training
+    def training(self, from_date, to_date):
+        try:
+            # Make sure `from_date` and `to_date` are timezone-aware if required
+            if from_date is not None:
+                from_date = make_aware(from_date)
+            if to_date is not None:
+                to_date = make_aware(to_date)
+
+            # Filter the training queryset based on date range
+            queryset = Training.objects.all()
+            if from_date and to_date:
+                queryset = queryset.filter(created_at__range=(from_date, to_date))
+
+            # Process queryset to include required data
+            training = []
+            for i in queryset:
+                couch_username = i.couch_telegram.telegram_username if i.couch_telegram else ""
+                training.append({
+                    "couch": couch_username,
+                    "date": i.session_date,
+                    "time": i.session_time,
+                    "status": SubscriptionRequestStatus(i.status).name,
+                    "created_at": i.created_at,
+                })
+
+            return training
+        except Exception as e:
+            print(f"Error in training function: {e}")
+            return []
+
 
 class SubscriberActivityAPIView(APIView):
     def get(self, request, format=None):
@@ -207,17 +261,11 @@ class SubscriberActivityAPIView(APIView):
         if token != get_credentials('token_auth'):
             return Response(False,status=status.HTTP_401_UNAUTHORIZED)
 
-        filter_param = request.query_params.get('filter', 'month')
-        date = request.query_params.get('date', None)
-        if date == 'all':
-            date = None
-        from_date = request.query_params.get('from_date', None)
-        to_date = request.query_params.get('to_date', None)
-        now = timezone.now()
-        one_month_ago = now - timedelta(days=30)
-        next_month = now + timedelta(days=30)
+        
         try:
-            if date != None:
+            if from_date != None:
+                today = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+                from_date =  today.month_delta
                 date = datetime.strptime(date, "%d-%m-%Y")
                 aware_datetime = make_aware(date)
                 subscriptions = Subscription.objects.filter(created_at__date=aware_datetime)
